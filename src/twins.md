@@ -2,14 +2,147 @@
 
 <a href="/">← Back to Explorer</a> | <a href="/compare">→ Compare categories</a>
 
-Paste school names or UNITIDs (one per line) to find the three closest twin institutions for each.
-
 ```js
 import { collegeCard } from "./components/collegeCard.js";
 const allInstitutions = await FileAttachment("data/institutions.csv").csv({typed: true});
 const programs = await FileAttachment("data/programs.csv").csv({typed: true});
 const institutions = allInstitutions.filter(d => d.admission_rate != null && d.admission_rate <= 75);
 ```
+
+---
+
+## Discover Schools
+
+Answer three questions and we'll show schools that match — sorted left to right from most accessible to most selective.
+
+```js
+const regionStates = {
+  "New England": ["ME", "NH", "VT", "MA", "RI", "CT"],
+  "Mid-Atlantic": ["NY", "NJ", "PA", "MD", "DE", "DC", "VA", "WV"],
+  "South-East": ["NC", "SC", "GA", "FL", "AL", "MS", "TN", "KY", "AR", "LA"],
+  "Midwest": ["OH", "IN", "MI", "WI", "IL", "MN", "IA", "MO", "ND", "SD", "NE", "KS"],
+  "Mountain West": ["MT", "ID", "WY", "CO", "UT", "NV", "AZ", "NM"],
+  "West Coast": ["WA", "OR", "CA", "AK", "HI"]
+};
+const stateToRegion = new Map();
+for (const [region, states] of Object.entries(regionStates)) {
+  for (const state of states) stateToRegion.set(state, region);
+}
+
+const subjectCipMap = {
+  "Math / Statistics":              [27],
+  "Biology / Life Sciences":        [26],
+  "Chemistry / Physics":            [40],
+  "Computer Science / Technology":  [11, 10, 15],
+  "English / Literature / Writing": [23],
+  "History / Political Science":    [54, 45],
+  "Foreign Language / Linguistics": [16],
+  "Economics / Business":           [52],
+  "Psychology / Sociology":         [42, 45],
+  "Visual Arts / Design":           [50],
+  "Music / Performance":            [50],
+  "Theater / Film":                 [50],
+  "Philosophy / Ethics / Religion": [38, 39],
+  "Environmental Studies":          [3, 31]
+};
+
+const schoolCipFamilies = new Map();
+for (const p of programs) {
+  if (!schoolCipFamilies.has(p.UNITID)) schoolCipFamilies.set(p.UNITID, new Set());
+  schoolCipFamilies.get(p.UNITID).add(p.cip_family);
+}
+```
+
+```js
+const localeChoice = view(Inputs.radio(
+  ["City", "Town or Suburb", "Rural"],
+  {label: "Location type", value: "City"}
+));
+```
+
+```js
+const sizeChoice = view(Inputs.radio(
+  ["Under 2,000", "Under 5,000", "Under 10,000", "10,000+"],
+  {label: "Size (# of undergrads)", value: "Under 5,000"}
+));
+```
+
+```js
+const regionChoice = view(Inputs.select(
+  ["Any region", "New England", "Mid-Atlantic", "South-East", "Midwest", "Mountain West", "West Coast"],
+  {label: "Region"}
+));
+```
+
+```js
+const subjectChoice = view(Inputs.checkbox(
+  Object.keys(subjectCipMap),
+  {label: "Subjects of interest (leave blank for any)"}
+));
+```
+
+```js
+const selectedCips = new Set(subjectChoice.flatMap(s => subjectCipMap[s] || []));
+
+const discoverFiltered = institutions.filter(d => {
+  const localeOk =
+    localeChoice === "City" ? d.locale_group === "City" :
+    localeChoice === "Town or Suburb" ? (d.locale_group === "Town" || d.locale_group === "Suburb") :
+    d.locale_group === "Rural";
+  const ug = d.enrollment_ug || 0;
+  const sizeOk =
+    sizeChoice === "Under 2,000" ? ug < 2000 :
+    sizeChoice === "Under 5,000" ? ug < 5000 :
+    sizeChoice === "Under 10,000" ? ug < 10000 :
+    ug >= 10000;
+  const regionOk = regionChoice === "Any region" || stateToRegion.get(d.STABBR) === regionChoice;
+  const cipOk = selectedCips.size === 0 ||
+    [...selectedCips].some(c => (schoolCipFamilies.get(d.UNITID) || new Set()).has(c));
+  return localeOk && sizeOk && regionOk && cipOk;
+});
+
+const tierHigh = discoverFiltered
+  .filter(d => d.admission_rate > 40)
+  .sort((a, b) => (b.grad_rate_6yr || 0) - (a.grad_rate_6yr || 0))
+  .slice(0, 3);
+const tierMid = discoverFiltered
+  .filter(d => d.admission_rate >= 20 && d.admission_rate <= 40)
+  .sort((a, b) => (b.grad_rate_6yr || 0) - (a.grad_rate_6yr || 0))
+  .slice(0, 3);
+const tierLow = discoverFiltered
+  .filter(d => d.admission_rate < 20)
+  .sort((a, b) => (b.grad_rate_6yr || 0) - (a.grad_rate_6yr || 0))
+  .slice(0, 3);
+```
+
+```js
+{
+  const tiers = [tierHigh, tierMid, tierLow];
+  const tierLabels = ["Admission > 40%", "Admission 20–40%", "Admission < 20%"];
+  const nRows = Math.max(tierHigh.length, tierMid.length, tierLow.length);
+
+  if (nRows === 0) {
+    display(html`<p><em>No schools match these preferences — try adjusting your filters.</em></p>`);
+  } else {
+    display(html`<div style="overflow-x:auto;">
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(260px, 1fr)); gap:1.25rem;">
+        ${tierLabels.map(label => html`
+          <div style="font-size:0.78rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; color:#777; padding-bottom:0.4rem; border-bottom:2px solid #eee; margin-bottom:0.25rem;">${label}</div>`)}
+        ${Array.from({length: nRows}, (_, i) =>
+          tiers.map(tier => html`
+            <div>${tier[i] ? collegeCard(tier[i]) : html`<div style="color:#ccc; font-size:0.85rem; padding:1rem;"><em>—</em></div>`}</div>`)
+        ).flat()}
+      </div>
+    </div>`);
+  }
+}
+```
+
+---
+
+## Find Twins for a Specific School
+
+Paste school names or UNITIDs (one per line) to find the three closest twin institutions for each.
 
 ```js
 // Build CIP degree-count vector per school
