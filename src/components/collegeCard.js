@@ -1,5 +1,14 @@
 import { html } from "npm:htl";
 
+function getDeck() {
+  try { return new Set(JSON.parse(localStorage.getItem("college-deck") || "[]")); }
+  catch { return new Set(); }
+}
+
+function saveDeck(deck) {
+  localStorage.setItem("college-deck", JSON.stringify([...deck]));
+}
+
 export function collegeCard(school) {
   if (!school) return html``;
 
@@ -74,11 +83,33 @@ export function collegeCard(school) {
       ${row("Pell recipients", pct(school.pct_pell))}
       ${row("Women", pct(school.pct_women))}
       <button data-extend style="margin-top:0.6rem; background:none; border:none; padding:0; font-size:0.8rem; color:#555; cursor:pointer; text-decoration:underline;">Extended data ↗</button>
+      <button data-deck style="margin-top:0.4rem; display:block; width:100%; padding:0.35rem 0.6rem; font-size:0.82rem; border-radius:5px; cursor:pointer; border:1px solid; font-weight:500;"></button>
     </div>
     ${dialog}
   </div>`;
 
   card.querySelector("[data-extend]").onclick = () => dialog.showModal();
+
+  const deckBtn = card.querySelector("[data-deck]");
+
+  function updateDeckBtn() {
+    const inDeck = getDeck().has(school.UNITID);
+    deckBtn.textContent = inDeck ? "− Remove from deck" : "+ Add to deck";
+    deckBtn.style.background = inDeck ? "#fee2e2" : "#f0fdf4";
+    deckBtn.style.color = inDeck ? "#991b1b" : "#166534";
+    deckBtn.style.borderColor = inDeck ? "#fca5a5" : "#86efac";
+  }
+
+  deckBtn.onclick = () => {
+    const deck = getDeck();
+    if (deck.has(school.UNITID)) deck.delete(school.UNITID);
+    else deck.add(school.UNITID);
+    saveDeck(deck);
+    updateDeckBtn();
+    card.dispatchEvent(new CustomEvent("deck-changed", { bubbles: true, detail: { unitid: school.UNITID, inDeck: deck.has(school.UNITID) } }));
+  };
+
+  updateDeckBtn();
 
   return card;
 }

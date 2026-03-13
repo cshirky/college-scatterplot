@@ -102,13 +102,13 @@ def join_tuition(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
 
 
 def join_sat_act(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
-    """Join SAT and ACT score data from ADM2023."""
+    """Join SAT/ACT score data and yield rate from ADM2023."""
     path = Path(raw_dir) / "adm2023.csv"
     if not path.exists():
         path = Path(raw_dir) / "ADM2023.csv"
     adm = _read_csv(path)
-    score_cols = ["UNITID", "SATVR25", "SATVR75", "SATMT25", "SATMT75", "ACTCM25", "ACTCM75"]
-    score_cols = [c for c in score_cols if c in adm.columns]
+    wanted = ["UNITID", "SATVR25", "SATVR75", "SATMT25", "SATMT75", "ACTCM25", "ACTCM75", "ADMSSN", "ENRLT"]
+    score_cols = [c for c in wanted if c in adm.columns]
     adm = adm[score_cols].copy()
     for col in score_cols[1:]:
         adm[col] = pd.to_numeric(adm[col], errors="coerce")
@@ -117,7 +117,9 @@ def join_sat_act(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
                           (adm["SATMT25"] + adm["SATMT75"]) / 2).round(0)
     if "ACTCM25" in adm.columns:
         adm["act_avg"] = ((adm["ACTCM25"] + adm["ACTCM75"]) / 2).round(1)
-    keep = ["UNITID"] + [c for c in ["sat_avg", "act_avg"] if c in adm.columns]
+    if "ADMSSN" in adm.columns and "ENRLT" in adm.columns:
+        adm["yield_rate"] = (adm["ENRLT"] / adm["ADMSSN"] * 100).round(1)
+    keep = ["UNITID"] + [c for c in ["sat_avg", "act_avg", "yield_rate"] if c in adm.columns]
     return df.merge(adm[keep], on="UNITID", how="left")
 
 
@@ -226,7 +228,7 @@ def main(raw_dir: str = "data/raw", output_dir: str = "data/output"):
         "pct_asian", "pct_aian", "pct_nhpi", "pct_two_or_more",
         "pct_unknown", "pct_nonresident", "pct_pell",
         "tuition_in_state", "tuition_out_of_state",
-        "sat_avg", "act_avg", "grad_ratio",
+        "sat_avg", "act_avg", "yield_rate", "grad_ratio",
     ]
     institutions = df[[c for c in institutions_cols if c in df.columns]]
     institutions.to_csv(output_path / "institutions.csv", index=False)

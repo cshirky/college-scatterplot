@@ -212,16 +212,25 @@ function genderDistance(a, b) {
   return Math.abs((a.pct_women || 50) - (b.pct_women || 50)) / 100;
 }
 
+const localeOrder = {"City": 0, "Suburb": 1, "Town": 2, "Rural": 3};
+
+function localeCloseness(a, b) {
+  const la = localeOrder[a.locale_group] ?? 1;
+  const lb = localeOrder[b.locale_group] ?? 1;
+  return 1 - Math.abs(la - lb) / 3;
+}
+
 function twinScore(a, b) {
   const programSim = cosineSimilarity(a.UNITID, b.UNITID);
   const enrollClose = enrollmentCloseness(a, b);
   // Penalize large differences in grad/undergrad balance
   const balanceDiff = Math.abs(gradProportion(a) - gradProportion(b));
   const balancePenalty = 1 - balanceDiff;
-  // Penalize differences in racial and gender makeup
+  // Penalize differences in racial, gender, and locale makeup
   const racialPenalty = 1 - racialDistance(a, b);
   const genderPenalty = 1 - genderDistance(a, b);
-  return (programSim * 0.5 + enrollClose * 0.5) * balancePenalty * racialPenalty * genderPenalty;
+  const localePenalty = localeCloseness(a, b);
+  return (programSim * 0.5 + enrollClose * 0.5) * balancePenalty * racialPenalty * genderPenalty * localePenalty;
 }
 
 // Count how many schools offer each CIP family
@@ -251,7 +260,6 @@ function findTwins(school, n = 3) {
   const candidates = institutions.filter(d =>
     d.UNITID !== school.UNITID &&
     d.sector_label === school.sector_label &&
-    d.locale_group === school.locale_group &&
     schoolVectors.has(d.UNITID)
   );
   const scored = candidates.map(d => ({school: d, score: twinScore(school, d)}));

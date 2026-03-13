@@ -31,13 +31,12 @@ Roughly where did you land on the ACT?
 - 33 or above
 
 <!-- question id="gpa" type="radio" -->
-How are you doing academically? Roughly — we're not checking.
+How would you describe your grades?
 
-- Mostly A's
-- Mix of A's and B's
-- Mostly B's
-- Mix of B's and C's
-- Below that, or I'd rather not say
+- Great
+- Good
+- Average
+- Spotty
 
 <!-- question id="subjects" type="checkbox" max-select="3" -->
 Which subjects do you actually like, or at least find interesting? Pick up to three.
