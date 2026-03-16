@@ -269,7 +269,92 @@ function findTwins(school, n = 3) {
 ```
 
 ```js
-const inputText = view(Inputs.textarea({label: "Paste school names or UNITIDs (one per line)", rows: 8, width: 600}));
+function makeAutocompleteTextarea(institutions) {
+  const wrap = document.createElement('label');
+  wrap.style.cssText = 'display: block; font: 13px/1.5 var(--sans-serif, system-ui); color: var(--theme-foreground);';
+
+  const labelText = document.createElement('div');
+  labelText.textContent = 'Paste school names or UNITIDs (one per line)';
+  labelText.style.cssText = 'margin-bottom: 4px; font-weight: 600;';
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position: relative; display: inline-block;';
+
+  const textarea = document.createElement('textarea');
+  textarea.rows = 8;
+  textarea.style.cssText = 'width: 600px; font-family: monospace; font-size: 13px; display: block; box-sizing: border-box;';
+
+  const suggBox = document.createElement('div');
+  suggBox.style.cssText = [
+    'position: absolute',
+    'top: 100%',
+    'left: 0',
+    'width: 600px',
+    'max-height: 220px',
+    'overflow-y: auto',
+    'background: #fff',
+    'border: 1px solid #bbb',
+    'box-shadow: 0 2px 6px rgba(0,0,0,0.12)',
+    'z-index: 100',
+    'display: none',
+    'font-size: 0.85rem',
+  ].join(';');
+
+  let debounce;
+
+  function getCurrentLine() {
+    const val = textarea.value;
+    const pos = textarea.selectionStart;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineEndRaw = val.indexOf('\n', pos);
+    const lineEnd = lineEndRaw === -1 ? val.length : lineEndRaw;
+    return { lineStart, lineEnd, text: val.slice(lineStart, lineEnd).trim() };
+  }
+
+  textarea.addEventListener('input', () => {
+    wrap.dispatchEvent(new Event('input', {bubbles: true}));
+    clearTimeout(debounce);
+    const { text } = getCurrentLine();
+    if (text.length < 3 || /^\d+$/.test(text)) { suggBox.style.display = 'none'; return; }
+    debounce = setTimeout(() => {
+      const { text: t, lineStart, lineEnd } = getCurrentLine();
+      if (t.length < 3 || /^\d+$/.test(t)) { suggBox.style.display = 'none'; return; }
+      const matches = institutions.filter(d => d.INSTNM.toLowerCase().includes(t.toLowerCase())).slice(0, 10);
+      suggBox.innerHTML = '';
+      if (!matches.length) { suggBox.style.display = 'none'; return; }
+      for (const m of matches) {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding: 5px 10px; cursor: pointer;';
+        item.textContent = `${m.INSTNM} — ${m.STABBR}`;
+        item.onmouseover = () => item.style.background = '#f0f0f0';
+        item.onmouseout = () => item.style.background = '';
+        item.onmousedown = e => {
+          e.preventDefault();
+          const v = textarea.value;
+          textarea.value = v.slice(0, lineStart) + m.INSTNM + v.slice(lineEnd);
+          textarea.setSelectionRange(lineStart + m.INSTNM.length, lineStart + m.INSTNM.length);
+          suggBox.style.display = 'none';
+          wrap.dispatchEvent(new Event('input', {bubbles: true}));
+        };
+        suggBox.appendChild(item);
+      }
+      suggBox.style.display = 'block';
+    }, 300);
+  });
+
+  textarea.addEventListener('keydown', e => { if (e.key === 'Escape') suggBox.style.display = 'none'; });
+  textarea.addEventListener('blur', () => setTimeout(() => suggBox.style.display = 'none', 150));
+
+  Object.defineProperty(wrap, 'value', { get: () => textarea.value });
+
+  container.appendChild(textarea);
+  container.appendChild(suggBox);
+  wrap.appendChild(labelText);
+  wrap.appendChild(container);
+  return wrap;
+}
+
+const inputText = view(makeAutocompleteTextarea(allInstitutions));
 ```
 
 ```js
@@ -292,7 +377,7 @@ const matchResults = dedupedLines.map(line => {
   const lower = line.toLowerCase();
   const nameMatches = institutions.filter(d => d.INSTNM.toLowerCase().includes(lower));
   if (nameMatches.length === 1) return {line, match: nameMatches[0], error: null};
-  if (nameMatches.length > 1) return {line, match: null, error: `"${line}" matched ${nameMatches.length} schools — be more specific`};
+  if (nameMatches.length > 1) return {line, match: null, error: null};
   return {line, match: null, error: `"${line}" not found`};
 });
 
