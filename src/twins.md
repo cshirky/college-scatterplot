@@ -130,7 +130,7 @@ const tierLow = discoverFiltered
           <div style="font-size:0.78rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; color:#777; padding-bottom:0.4rem; border-bottom:2px solid #eee; margin-bottom:0.25rem;">${label}</div>`)}
         ${Array.from({length: nRows}, (_, i) =>
           tiers.map(tier => html`
-            <div>${tier[i] ? collegeCard(tier[i]) : html`<div style="color:#ccc; font-size:0.85rem; padding:1rem;"><em>—</em></div>`}</div>`)
+            <div>${tier[i] ? collegeCard(tier[i], programsByUnitid.get(tier[i].UNITID) || [], cipSchoolCounts) : html`<div style="color:#ccc; font-size:0.85rem; padding:1rem;"><em>—</em></div>`}</div>`)
         ).flat()}
       </div>
     </div>`);
@@ -238,6 +238,15 @@ const cipSchoolCount = new Map();
 for (const p of programs) {
   if (!cipSchoolCount.has(p.cip_family)) cipSchoolCount.set(p.cip_family, new Set());
   cipSchoolCount.get(p.cip_family).add(p.UNITID);
+}
+// Normalize to counts for passing to collegeCard
+const cipSchoolCounts = new Map([...cipSchoolCount].map(([k, v]) => [k, v.size]));
+
+// Index programs by UNITID for fast lookup
+const programsByUnitid = new Map();
+for (const p of programs) {
+  if (!programsByUnitid.has(p.UNITID)) programsByUnitid.set(p.UNITID, []);
+  programsByUnitid.get(p.UNITID).push(p);
 }
 
 function topCips(unitid, n = 5) {
@@ -411,39 +420,20 @@ const results = uniqueMatched.map(r => findTwins(r.match));
 if (results.length > 0) {
   for (const r of results) {
     const s = r.school;
-    const top5 = topCips(s.UNITID);
-    const rare5 = rarestCips(s.UNITID);
     display(html`<div style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 2px solid #eee;">
-      ${collegeCard(s)}
+      ${collegeCard(s, programsByUnitid.get(s.UNITID) || [], cipSchoolCounts)}
       ${r.noPrograms
         ? html`<p style="margin-top: 0.75rem; color: #999; font-size: 0.9rem;"><em>No program data available — cannot compute twins.</em></p>`
         : html`<div style="margin-top: 1rem;">
             <div style="font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #777; margin-bottom: 0.5rem;">Closest twins</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
               ${r.twins.map((t, i) => html`<div>
                 <div style="font-size: 0.78rem; color: #888; margin-bottom: 0.3rem;">
                   Twin ${i + 1} &middot; Match score: ${(t.score * 100).toFixed(1)}%
                 </div>
-                ${collegeCard(t.school)}
+                ${collegeCard(t.school, programsByUnitid.get(t.school.UNITID) || [], cipSchoolCounts)}
               </div>`)}
             </div>
-            <details>
-              <summary style="cursor: pointer; font-size: 0.82rem; color: #555; user-select: none;">CIP program details for ${s.INSTNM}</summary>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; font-size: 0.82rem;">
-                <div>
-                  <strong>Top 5 by graduates:</strong>
-                  <ol style="margin: 0.3rem 0; padding-left: 1.2rem;">
-                    ${top5.map(p => html`<li>${p.cip_label} (${p.total_awards.toLocaleString()})</li>`)}
-                  </ol>
-                </div>
-                <div>
-                  <strong>5 rarest programs:</strong>
-                  <ol style="margin: 0.3rem 0; padding-left: 1.2rem;">
-                    ${rare5.map(p => html`<li>${p.cip_label} (offered at ${p.schoolCount.toLocaleString()} schools)</li>`)}
-                  </ol>
-                </div>
-              </div>
-            </details>
           </div>`}
     </div>`);
   }

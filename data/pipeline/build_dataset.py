@@ -37,6 +37,8 @@ def load_institutions(raw_dir: str) -> pd.DataFrame:
     path = Path(raw_dir) / "HD2023.csv"
     df = _read_csv(path)
     df = df[df["SECTOR"].isin([1, 2, 3])].copy()
+    if "WEBADDR" in df.columns:
+        df["WEBADDR"] = df["WEBADDR"].fillna("").str.strip()
     return df
 
 
@@ -207,6 +209,45 @@ def join_sat_act(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
     return df.merge(adm[keep], on="UNITID", how="left")
 
 
+def add_academic_tier(df: pd.DataFrame) -> pd.DataFrame:
+    """Add academic_tier based on SAT (primary), ACT (secondary), admission rate (fallback).
+    Four tiers: straight-a, a-range, b-plus, b-range.
+    Schools that would fall in the B/C open-access bucket are left null.
+    """
+    def tier(row):
+        sat = row.get("sat_avg")
+        act = row.get("act_avg")
+        adm = row.get("admission_rate")
+
+        if pd.notna(sat):
+            if sat >= 1400: return "straight-a"
+            if sat >= 1200: return "a-range"
+            if sat >= 1050: return "b-plus"
+            if sat >= 900:  return "b-range"
+            return None
+
+        if pd.notna(act):
+            if act >= 33: return "straight-a"
+            if act >= 28: return "a-range"
+            if act >= 24: return "b-plus"
+            if act >= 20: return "b-range"
+            return None
+
+        # Admission rate fallback — only assign tiers up to ~75%;
+        # above that, schools are effectively open-access
+        if pd.notna(adm):
+            if adm < 15: return "straight-a"
+            if adm < 35: return "a-range"
+            if adm < 55: return "b-plus"
+            if adm < 75: return "b-range"
+
+        return None
+
+    df = df.copy()
+    df["academic_tier"] = df.apply(tier, axis=1)
+    return df
+
+
 def add_grad_ratio(df: pd.DataFrame) -> pd.DataFrame:
     """Add grad_ratio column: none, minority, or majority."""
     df = df.copy()
@@ -302,6 +343,9 @@ def main(raw_dir: str = "data/raw", output_dir: str = "data/output"):
     print("Adding grad ratio...")
     df = add_grad_ratio(df)
 
+    print("Adding academic tier...")
+    df = add_academic_tier(df)
+
     # Filter out institutions with 0% admission rate or 0% graduation rate
     # (these are data artifacts, not truly zero)
     before = len(df)
@@ -311,14 +355,14 @@ def main(raw_dir: str = "data/raw", output_dir: str = "data/output"):
     institutions_cols = [
         "UNITID", "INSTNM", "CITY", "STABBR", "SECTOR", "sector_label",
         "LOCALE", "locale_group", "C18BASIC", "INSTSIZE", "CONTROL", "HBCU",
-        "LONGITUD", "LATITUDE", "COUNTYCD",
+        "LONGITUD", "LATITUDE", "COUNTYCD", "WEBADDR",
         "admission_rate", "grad_rate_6yr",
         "enrollment_total", "enrollment_ug",
         "pct_women", "pct_white", "pct_black", "pct_hispanic",
         "pct_asian", "pct_aian", "pct_nhpi", "pct_two_or_more",
         "pct_unknown", "pct_nonresident", "pct_pell",
         "tuition_in_state", "tuition_out_of_state",
-        "sat_avg", "act_avg", "yield_rate", "grad_ratio",
+        "sat_avg", "act_avg", "yield_rate", "grad_ratio", "academic_tier",
         "athletic_association", "ncaa_division", "sports_offered", "relaffil_label",
     ]
     institutions = df[[c for c in institutions_cols if c in df.columns]]
