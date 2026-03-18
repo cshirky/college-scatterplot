@@ -130,6 +130,48 @@ RELAFFIL_LABELS = {
 }
 
 
+EADA_SPORTS = [
+    "Archery", "Badminton", "Baseball", "Basketball", "Beach Volleyball",
+    "Bowling", "All Track Combined", "Diving", "Equestrian", "Fencing",
+    "Field Hockey", "Football", "Golf", "Gymnastics", "Ice Hockey",
+    "Lacrosse", "Rifle", "Rodeo", "Rowing", "Sailing", "Skiing", "Soccer",
+    "Softball", "Squash", "Swimming and Diving", "Swimming",
+    "Synchronized Swimming", "Table Tennis", "Team Handball", "Tennis",
+    "Track and Field Indoor", "Track and Field Outdoor", "Track and Field X Country",
+    "Volleyball", "Water Polo", "Weight Lifting", "Wrestling",
+]
+
+SPORT_NAME_MAP = {"All Track Combined": "Track & Field"}
+
+
+def join_athletics(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
+    """Join NCAA division, athletic association, and sports offered from EADA 2023."""
+    path = Path(raw_dir) / "eada2023_participants.csv"
+    if not path.exists():
+        return df
+    eada = _read_csv(path)
+    eada = eada.rename(columns={
+        "Classification Name": "ncaa_division",
+        "Sanction Name": "athletic_association",
+    })
+    total_cols = [f"{s} Total Participation" for s in EADA_SPORTS]
+    for col in total_cols:
+        if col in eada.columns:
+            eada[col] = pd.to_numeric(eada[col], errors="coerce").fillna(0)
+
+    def sports_list(row):
+        offered = []
+        for sport in EADA_SPORTS:
+            col = f"{sport} Total Participation"
+            if col in eada.columns and row.get(col, 0) > 0:
+                offered.append(SPORT_NAME_MAP.get(sport, sport))
+        return ", ".join(offered) if offered else None
+
+    eada["sports_offered"] = eada.apply(sports_list, axis=1)
+    keep = eada[["UNITID", "ncaa_division", "athletic_association", "sports_offered"]]
+    return df.merge(keep, on="UNITID", how="left")
+
+
 def join_religious_affiliation(df: pd.DataFrame, raw_dir: str) -> pd.DataFrame:
     """Join religious affiliation from IC2023_RV."""
     path = Path(raw_dir) / "IC2023_RV.csv"
@@ -248,6 +290,9 @@ def main(raw_dir: str = "data/raw", output_dir: str = "data/output"):
     print("Joining SAT/ACT scores...")
     df = join_sat_act(df, raw_dir)
 
+    print("Joining athletics data...")
+    df = join_athletics(df, raw_dir)
+
     print("Joining religious affiliation...")
     df = join_religious_affiliation(df, raw_dir)
 
@@ -273,7 +318,8 @@ def main(raw_dir: str = "data/raw", output_dir: str = "data/output"):
         "pct_asian", "pct_aian", "pct_nhpi", "pct_two_or_more",
         "pct_unknown", "pct_nonresident", "pct_pell",
         "tuition_in_state", "tuition_out_of_state",
-        "sat_avg", "act_avg", "yield_rate", "grad_ratio", "relaffil_label",
+        "sat_avg", "act_avg", "yield_rate", "grad_ratio",
+        "athletic_association", "ncaa_division", "sports_offered", "relaffil_label",
     ]
     institutions = df[[c for c in institutions_cols if c in df.columns]]
     institutions.to_csv(output_path / "institutions.csv", index=False)
