@@ -92,7 +92,7 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
 
   // ── Section 4: internal profile link ────────────────────────────────────
   const profileLink = html`<div style="padding:0.45rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.78rem;">
-    <a href="/schools/${school.UNITID}" style="color:#2563eb;">Full profile on this site →</a>
+    <a href="/schools?id=${school.UNITID}" style="color:#2563eb;">Full profile on this site →</a>
   </div>`;
 
   // ── Section 5: save to deck ──────────────────────────────────────────────
