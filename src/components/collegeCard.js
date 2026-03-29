@@ -35,25 +35,35 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
 
   const pct    = (v, decimals = 0) => v != null ? `${Number(v).toFixed(decimals)}%` : "—";
   const num    = (v) => v != null ? Number(v).toLocaleString() : "—";
+  const dollar = (v) => v != null ? "$" + Math.round(Number(v)).toLocaleString() : "—";
 
   const rate = school.admission_rate;
   function admissionHue(r) {
-    // 3% (most selective) → hue 18 (orangey-red)
-    // 100% (open admission) → hue 142 (green)
-    const t = Math.max(0, Math.min(1, (r - 3) / (100 - 3)));
+    // 0.003 (most selective) → hue 18 (orangey-red)
+    // 1.0 (open admission) → hue 142 (green)
+    // Handle both 0–1 and 0–100 scales
+    const normalized = r > 1 ? r / 100 : r;
+    const t = Math.max(0, Math.min(1, (normalized - 0.03) / (1.0 - 0.03)));
     return 18 + t * (142 - 18);
   }
   const headerBg    = rate == null ? "#e5e7eb" : `hsl(${admissionHue(rate)}, 68%, 88%)`;
   const headerColor = rate == null ? "#374151" : `hsl(${admissionHue(rate)}, 72%, 28%)`;
 
   // ── Section 1: header stats ──────────────────────────────────────────────
+  const admRate = rate != null
+    ? (rate > 1 ? `${rate.toFixed(1)}% admit` : `${(rate * 100).toFixed(1)}% admit`)
+    : null;
   const statItems = [
     school.sector_label,
-    school.locale_group,
+    school.locale_group || null,
     school.enrollment_ug != null ? `${num(school.enrollment_ug)} undergrads` : null,
     school.yield_rate    != null ? `${pct(school.yield_rate)} yield`         : null,
     school.grad_rate_6yr != null ? `${pct(school.grad_rate_6yr)} grad`       : null,
-    school.HBCU === 1 ? "HBCU" : null,
+    admRate,
+    +school.hbcu === 1 ? "HBCU" : null,
+    +school.hsi  === 1 ? "HSI"  : null,
+    +school.womenonly === 1 ? "Women's" : null,
+    +school.tribal === 1 ? "Tribal" : null,
   ].filter(Boolean);
 
   const header = html`<div style="background:${headerBg}; padding:0.75rem 1rem 0.65rem;">
@@ -64,7 +74,36 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     </div>
   </div>`;
 
-  // ── Section 2: majors ────────────────────────────────────────────────────
+  // ── Section 2: Carnegie classification ───────────────────────────────────
+  const carnegieItems = [
+    school.ic2025name     ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Type:</span> ${school.ic2025name}</div>` : html``,
+    school.saec2025name   ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">SAEC:</span> ${school.saec2025name}</div>` : html``,
+    school.research2025name ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Research:</span> ${school.research2025name}</div>` : html``,
+    school.setting2025name  ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Setting:</span> ${school.setting2025name}</div>` : html``,
+  ];
+
+  const carnegieSection = (school.ic2025name || school.saec2025name)
+    ? html`<div style="padding:0.55rem 1rem; border-bottom:1px solid #f0f0f0;">
+        ${carnegieItems}
+      </div>`
+    : html``;
+
+  // ── Section 3: earnings & equity ─────────────────────────────────────────
+  const earningsItems = [];
+  if (school.saec_earnings) earningsItems.push(`Median earnings: ${dollar(school.saec_earnings)}`);
+  if (school.earnings_ratio) earningsItems.push(`${Number(school.earnings_ratio).toFixed(2)}× vs peers`);
+  if (school.net_price) earningsItems.push(`Net price: ${dollar(school.net_price)}`);
+  if (school.pell_2023 != null) {
+    earningsItems.push(`${(school.pell_2023 * 100).toFixed(1)}% Pell`);
+  }
+
+  const earningsSection = earningsItems.length > 0
+    ? html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.76rem; color:#555; display:flex; flex-wrap:wrap; gap:0.5rem 1rem;">
+        ${earningsItems.map(e => html`<span>${e}</span>`)}
+      </div>`
+    : html``;
+
+  // ── Section 4: majors ────────────────────────────────────────────────────
   const topMajors = [...schoolPrograms]
     .sort((a, b) => b.total_awards - a.total_awards)
     .slice(0, 5);
@@ -77,7 +116,7 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     <div><span style="font-weight:600; color:#555;">Distinctive:</span> ${distinctiveMajors.map(p => p.cip_label).join(", ")}</div>
   </div>`;
 
-  // ── Section 3: external links ────────────────────────────────────────────
+  // ── Section 5: external links ────────────────────────────────────────────
   const websiteUrl = school.WEBADDR
     ? (school.WEBADDR.startsWith("http") ? school.WEBADDR : "https://" + school.WEBADDR)
     : null;
@@ -90,12 +129,7 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     <a href="${usnewsUrl}" target="_blank" rel="noopener" style="color:#2563eb;">US News ↗</a>
   </div>`;
 
-  // ── Section 4: internal profile link ────────────────────────────────────
-  const profileLink = html`<div style="padding:0.45rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.78rem;">
-    <a href="/schools/${school.UNITID}" style="color:#2563eb;">Full profile on this site →</a>
-  </div>`;
-
-  // ── Section 5: save to deck ──────────────────────────────────────────────
+  // ── Section 6: save to deck ──────────────────────────────────────────────
   const tierStyles = {
     definitely: { active: { bg: "#dcfce7", color: "#166534", border: "#86efac" }, label: "Definitely" },
     probably:   { active: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" }, label: "Probably"   },
@@ -113,9 +147,10 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
 
   const card = html`<div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; font-size:0.9rem; background:var(--theme-background,#fff);">
     ${header}
+    ${carnegieSection}
+    ${earningsSection}
     ${majorsSection}
     ${externalLinks}
-    ${profileLink}
     ${saveSection}
   </div>`;
 
