@@ -257,6 +257,7 @@ const axisChoice = view(Inputs.select(axisOptions, {
         channels: {
           Name: "INSTNM",
           State: "STABBR",
+          "Public/Private": "sector_label",
           "Classification": "ic2025name",
           "SAEC": "saec2025name",
           [axisChoice.xLabel]: xF,

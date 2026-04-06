@@ -232,6 +232,7 @@ const yVar = view(Inputs.select(axisVars, {label: "Y axis", format: d => d.label
         channels: {
           Name: "INSTNM",
           State: "STABBR",
+          "Public/Private": "sector_label",
           "Classification": "ic2025name",
           "SAEC": "saec2025name",
           Category: "_catName",
