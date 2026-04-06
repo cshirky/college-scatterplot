@@ -84,7 +84,6 @@ Plot.plot({
         "Yield": "yield_rate",
       },
     }),
-    Plot.areaY(bandPoints, {x: "x", y1: d => d.y - sd, y2: d => d.y + sd, fill: "orange", fillOpacity: 0.15}),
     Plot.line(trendPoints, {x: "x", y: "y", stroke: "orange", strokeWidth: 1, strokeDasharray: "4,4"}),
     Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
     Plot.ruleY([79.5], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
