@@ -7,6 +7,7 @@ export default {
     {name: "Find your school", path: "/vibe"},
     {name: "About you", path: "/academics"},
     {name: "My Deck", path: "/deck"},
+    {name: "Scatterplot", path: "/scatterplot"},
   ],
   root: "src",
 };

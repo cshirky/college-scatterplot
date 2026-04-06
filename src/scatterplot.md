@@ -52,42 +52,65 @@ const sd = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / (residuals.lengt
 
 const trendPoints = allTrendPoints.filter(p => p.y <= 98);
 const bandPoints = allTrendPoints.filter(p => p.y - sd >= 50 && p.y + sd <= 102);
+
+const yieldStep = 10, gradStep = 5;
+const yieldStart = Math.floor(xMin / yieldStep) * yieldStep;
+const yieldEnd   = Math.ceil(xMax  / yieldStep) * yieldStep;
+const grid = [];
+for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
+  for (let y1 = 50; y1 < 100; y1 += gradStep) {
+    grid.push({x1, x2: x1 + yieldStep, y1, y2: y1 + gradStep});
+  }
+}
+const emptyRects = grid.filter(q =>
+  !data.some(d =>
+    d.yield_rate    >= q.x1 && d.yield_rate    < q.x2 &&
+    d.grad_rate_6yr >= q.y1 && d.grad_rate_6yr < q.y2
+  )
+);
 ```
 
 ```js
-Plot.plot({
-  width: 800,
-  height: 600,
-  marginLeft: 50,
-  marginBottom: 50,
-  grid: true,
-  x: {
-    label: "Yield rate (%)",
-  },
-  y: {
-    label: "6-year graduation rate (%)",
-    domain: [50, 100],
-  },
-  marks: [
-    Plot.dot(data, {
-      x: "yield_rate",
-      y: "grad_rate_6yr",
-      r: 3,
-      fill: "steelblue",
-      fillOpacity: 0.5,
-      tip: {format: {x: false, y: false, fill: false}},
-      channels: {
-        School: "INSTNM",
-        State: "STABBR",
-        "Public/Private": "sector_label",
-        "Grad rate (6yr)": "grad_rate_6yr",
-        "Yield": "yield_rate",
-      },
-    }),
-    Plot.line(trendPoints, {x: "x", y: "y", stroke: "orange", strokeWidth: 1, strokeDasharray: "4,4"}),
-    Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
-    Plot.ruleY([79.5], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
-    Plot.crosshair(data, {x: "yield_rate", y: "grad_rate_6yr", color: "#555"}),
-  ],
-})
+const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
+```
+
+```js
+{
+  const query = searchQuery.trim().toLowerCase();
+  const match = d => query && d.INSTNM.toLowerCase().includes(query);
+
+  const baseColor = d => d.sector_label === "Public" ? "orange" : "steelblue";
+  const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
+
+  display(Plot.plot({
+    width: 800,
+    height: 600,
+    marginLeft: 50,
+    marginBottom: 50,
+    grid: true,
+    x: { label: "Yield rate (%)" },
+    y: { label: "6-year graduation rate (%)", domain: [50, 100] },
+    marks: [
+      Plot.rect(emptyRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f7f7f7"}),
+      Plot.dot(data, {
+        x: "yield_rate",
+        y: "grad_rate_6yr",
+        r: d => match(d) ? 6 : 3,
+        fill: d => match(d) ? hiColor(d) : baseColor(d),
+        fillOpacity: d => match(d) ? 1 : 0.5,
+        tip: true,
+        channels: {
+          School: "INSTNM",
+          State: "STABBR",
+          "Public/Private": "sector_label",
+          "Grad rate (6yr)": "grad_rate_6yr",
+          "Yield": "yield_rate",
+        },
+      }),
+      Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
+      Plot.ruleY([79.5], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
+      Plot.crosshair(data, {x: "yield_rate", y: "grad_rate_6yr", color: "#555"}),
+    ],
+  }));
+}
 ```
