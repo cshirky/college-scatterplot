@@ -15,19 +15,29 @@ const sectorOptions = ["Public", "Private nonprofit", "Private for-profit"];
 const localeOptions = ["City", "Suburb", "Town", "Rural"];
 const gradOptions = ["none", "minority", "majority"];
 const gradLabels = {none: "No grad students", minority: "Grad minority", majority: "Grad majority"};
+const allSaec = [...new Set(institutions.map(d => d.saec2025name).filter(Boolean))].sort();
 ```
 
 ```js
 const axisVars = [
   {label: "Admission Rate (%)", value: "admission_rate"},
   {label: "6-Year Graduation Rate (%)", value: "grad_rate_6yr"},
+  {label: "8-Year Completion Rate (%)", value: "completion_rate_8yr"},
+  {label: "8-Year Transfer-Out Rate (%)", value: "transfer_out_8yr"},
   {label: "SAT Score (avg)", value: "sat_avg"},
   {label: "ACT Score (avg)", value: "act_avg"},
   {label: "In-State Tuition ($)", value: "tuition_in_state"},
   {label: "Out-of-State Tuition ($)", value: "tuition_out_of_state"},
+  {label: "Net Price ($)", value: "net_price"},
   {label: "Total Enrollment", value: "enrollment_total"},
-  {label: "% Pell Recipients", value: "pct_pell"},
+  {label: "% Pell Recipients (×100)", value: "pell_2023",
+   scale: 100},
   {label: "% Women", value: "pct_women"},
+  {label: "Median Earnings 8yr ($)", value: "saec_earnings"},
+  {label: "Earnings Ratio (vs peers)", value: "earnings_ratio"},
+  {label: "Access Ratio (vs expected)", value: "access_ratio"},
+  {label: "Median Grad Debt ($)", value: "grad_debt_median"},
+  {label: "Research Expenditure Avg ($K)", value: "herd_avg"},
 ];
 ```
 
@@ -52,9 +62,11 @@ function addAllButton(input, allValues) {
 function buildCategoryForm(name, color) {
   const stateSelect = Inputs.select(["All", ...allStates], {label: "State", multiple: true, value: [], width: 200});
   stateSelect.querySelector("select").size = 4;
+  const saecSelect = Inputs.select(allSaec, {label: "SAEC classification", multiple: true, value: [], width: 200});
+  saecSelect.querySelector("select").size = 3;
   const sectorInput = Inputs.checkbox(sectorOptions, {label: "Sector", value: []});
   const gradInput = Inputs.checkbox(gradOptions, {label: "Grad enrollment", value: [], format: d => gradLabels[d]});
-  const localeInput = Inputs.checkbox(localeOptions, {label: "Locale", value: []});
+  const localeInput = Inputs.checkbox(localeOptions, {label: "Location", value: []});
   addAllButton(sectorInput, sectorOptions);
   addAllButton(gradInput, gradOptions);
   addAllButton(localeInput, localeOptions);
@@ -65,6 +77,9 @@ function buildCategoryForm(name, color) {
     grad: gradInput,
     locale: localeInput,
     state: stateSelect,
+    saec: saecSelect,
+    hbcu: Inputs.toggle({label: "HBCU only", value: false}),
+    hsi: Inputs.toggle({label: "HSI only", value: false}),
   });
   form.style.border = `2px solid ${color}`;
   form.style.borderRadius = "8px";
@@ -93,7 +108,10 @@ function filterCategory(cat) {
     cat.sector.includes(d.sector_label) &&
     cat.locale.includes(d.locale_group) &&
     (states.length === 0 || states.includes(d.STABBR)) &&
-    cat.grad.includes(d.grad_ratio)
+    cat.grad.includes(d.grad_ratio) &&
+    (cat.saec.length === 0 || cat.saec.includes(d.saec2025name)) &&
+    (!cat.hbcu || +d.hbcu === 1) &&
+    (!cat.hsi  || +d.hsi  === 1)
   );
 }
 const filtered1 = filterCategory(cat1);
@@ -127,11 +145,19 @@ const yVar = view(Inputs.select(axisVars, {label: "Y axis", format: d => d.label
     {key: "cat3", name: cat3.name, data: filtered3, color: "#f28e2b", show: cat3.show},
   ].filter(c => c.show);
 
+  // Helper: get numeric value with optional scale multiplier
+  function getVal(d, varSpec) {
+    const v = d[varSpec.value];
+    if (v == null) return null;
+    return varSpec.scale ? v * varSpec.scale : v;
+  }
+
   const allPoints = [];
   for (const cat of categories) {
     for (const d of cat.data) {
-      if (d[xVar.value] != null && d[yVar.value] != null) {
-        allPoints.push({...d, _cat: cat.key, _catName: cat.name, _color: cat.color});
+      const xv = getVal(d, xVar), yv = getVal(d, yVar);
+      if (xv != null && yv != null) {
+        allPoints.push({...d, _xv: xv, _yv: yv, _cat: cat.key, _catName: cat.name, _color: cat.color});
       }
     }
   }
@@ -167,18 +193,13 @@ const yVar = view(Inputs.select(axisVars, {label: "Y axis", format: d => d.label
   for (const cat of categories) {
     const catPoints = allPoints.filter(d => d._cat === cat.key);
     if (catPoints.length < 4) continue;
-    const xs = catPoints.map(d => d[xVar.value]);
-    const ys = catPoints.map(d => d[yVar.value]);
+    const xs = catPoints.map(d => d._xv);
+    const ys = catPoints.map(d => d._yv);
     const xMin = d3.min(xs), xMax = d3.max(xs);
     const coeffs = polyFit(xs, ys, 3);
     for (const x of d3.range(xMin, xMax, (xMax - xMin) / 100)) {
-      trendLines.push({
-        x,
-        y: coeffs[0] + coeffs[1] * x + coeffs[2] * x ** 2 + coeffs[3] * x ** 3,
-        _cat: cat.key,
-        _catName: cat.name,
-        _color: cat.color,
-      });
+      trendLines.push({x, y: coeffs[0] + coeffs[1]*x + coeffs[2]*x**2 + coeffs[3]*x**3,
+        _cat: cat.key, _catName: cat.name, _color: cat.color});
     }
   }
 
@@ -200,8 +221,8 @@ const yVar = view(Inputs.select(axisVars, {label: "Y axis", format: d => d.label
         strokeWidth: 2, strokeDasharray: "6,4",
       }),
       Plot.dot(allPoints, {
-        x: xVar.value,
-        y: yVar.value,
+        x: "_xv",
+        y: "_yv",
         fill: "_catName",
         r: "enrollment_total",
         fillOpacity: 0.5,
@@ -211,12 +232,15 @@ const yVar = view(Inputs.select(axisVars, {label: "Y axis", format: d => d.label
         channels: {
           Name: "INSTNM",
           State: "STABBR",
+          "Public/Private": "sector_label",
+          "Classification": "ic2025name",
+          "SAEC": "saec2025name",
           Category: "_catName",
-          [xVar.label]: xVar.value,
-          [yVar.label]: yVar.value,
+          [xVar.label]: "_xv",
+          [yVar.label]: "_yv",
         },
       }),
-      Plot.crosshair(allPoints, {x: xVar.value, y: yVar.value, color: "#555"}),
+      Plot.crosshair(allPoints, {x: "_xv", y: "_yv", color: "#555"}),
     ],
   }));
 }

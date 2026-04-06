@@ -1,5 +1,5 @@
 export default {
-  title: "IPEDS College Dashboard",
+  title: "Carnegie 2025 College Dashboard",
   pages: [
     {name: "Welcome", path: "/intro"},
     {name: "How to read a School Card", path: "/school-card"},
