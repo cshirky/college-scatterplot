@@ -1,0 +1,63 @@
+UNITID,INSTNM,CITY,STABBR,yield_rate,grad_rate_6yr
+101480,Jacksonville State University,Jacksonville,AL,19.8,50.0
+107080,Hendrix College,Conway,AR,19.8,73.0
+119173,Mount Saint Mary's University,Los Angeles,CA,19.0,62.0
+130253,Sacred Heart University,Fairfield,CT,19.7,73.0
+138600,Agnes Scott College,Decatur,GA,19.3,75.0
+140234,LaGrange College,Lagrange,GA,19.9,46.0
+141361,Young Harris College,Young Harris,GA,19.6,40.0
+142285,University of Idaho,Moscow,ID,19.3,59.0
+148584,University of St Francis,Joliet,IL,19.7,65.0
+152567,Trine University,Angola,IN,19.7,63.0
+152673,Wabash College,Crawfordsville,IN,19.2,83.0
+153001,Buena Vista University,Storm Lake,IA,19.6,63.0
+153834,Luther College,Decorah,IA,19.6,73.0
+156286,Bellarmine University,Louisville,KY,19.5,65.0
+162007,Bowie State University,Bowie,MD,19.0,42.0
+163851,Salisbury University,Salisbury,MD,19.2,72.0
+164076,Towson University,Towson,MD,19.2,72.0
+166513,University of Massachusetts-Lowell,Lowell,MA,19.4,69.0
+168421,Worcester Polytechnic Institute,Worcester,MA,19.7,87.0
+171100,Michigan State University,East Lansing,MI,19.3,82.0
+171492,Northwood University,Midland,MI,19.6,62.0
+176017,University of Mississippi,University,MS,19.2,68.0
+176044,Mississippi Valley State University,Itta Bena,MS,19.0,27.0
+176372,University of Southern Mississippi,Hattiesburg,MS,19.8,52.0
+179548,Stephens College,Columbia,MO,19.5,53.0
+180461,Montana State University,Bozeman,MT,19.0,54.0
+180595,Rocky Mountain College,Billings,MT,19.7,52.0
+181002,Creighton University,Omaha,NE,19.9,78.0
+185590,Montclair State University,Montclair,NJ,19.6,67.0
+190600,CUNY John Jay College of Criminal Justice,New York,NY,19.8,54.0
+190655,CUNY New York City College of Technology,Brooklyn,NY,19.9,30.0
+191621,Hilbert College,Hamburg,NY,19.5,53.0
+192819,Marist University,Poughkeepsie,NY,19.5,82.0
+195030,University of Rochester,Rochester,NY,19.9,86.0
+195720,St. John Fisher University,Rochester,NY,19.6,73.0
+196006,SUNY College of Technology at Alfred,Alfred,NY,19.6,43.0
+197869,Appalachian State University,Boone,NC,19.9,73.0
+198464,East Carolina University,Greenville,NC,19.6,66.0
+199102,North Carolina A & T State University,Greensboro,NC,19.4,53.0
+200800,University of Akron Main Campus,Akron,OH,19.7,49.0
+209807,Portland State University,Portland,OR,19.6,54.0
+211431,Carlow University,Pittsburgh,PA,19.7,52.0
+212197,Elizabethtown College,Elizabethtown,PA,19.4,75.0
+213507,Lebanon Valley College,Annville,PA,19.7,68.0
+213987,Mercyhurst University,Erie,PA,19.6,66.0
+214069,Misericordia University,Dallas,PA,19.2,71.0
+214777,Pennsylvania State University-Main Campus,University Park,PA,19.4,85.0
+216010,Shippensburg University of Pennsylvania,Shippensburg,PA,19.6,58.0
+217402,Providence College,Providence,RI,19.7,89.0
+217882,Clemson University,Clemson,SC,19.6,85.0
+218724,Coastal Carolina University,Conway,SC,19.0,51.0
+218964,Winthrop University,Rock Hill,SC,19.7,58.0
+219709,Belmont University,Nashville,TN,19.4,68.0
+228468,Southwestern Adventist University,Keene,TX,19.5,42.0
+228981,Texas Lutheran University,Seguin,TX,19.6,54.0
+232681,University of Mary Washington,Fredericksburg,VA,19.1,68.0
+232982,Old Dominion University,Norfolk,VA,19.7,49.0
+233295,Randolph-Macon College,Ashland,VA,19.7,72.0
+234173,Virginia Wesleyan University,Virginia Beach,VA,19.7,47.0
+236939,Washington State University,Pullman,WA,19.0,60.0
+239390,Mount Mary University,Milwaukee,WI,19.7,51.0
+240374,University of Wisconsin-Parkside,Kenosha,WI,19.9,42.0

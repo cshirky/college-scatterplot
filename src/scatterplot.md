@@ -1,14 +1,18 @@
 # Graduation Rate vs. Yield
 
 ```js
+import {collegeCard} from "./components/collegeCard.js";
+```
+
+```js
 const good_schools = FileAttachment("data/good_schools.csv").csv({typed: true});
 ```
 
 ```js
-const data = good_schools.filter(d =>
-  d.grad_rate_6yr != null && d.yield_rate != null &&
-  !isNaN(d.grad_rate_6yr) && !isNaN(d.yield_rate)
-);
+const data = good_schools
+  .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
+               !isNaN(d.grad_rate_6yr) && !isNaN(d.yield_rate))
+  .map(d => ({...d, yield_rate: Math.round(d.yield_rate)}));
 
 function polyFit(data, xKey, yKey, degree) {
   const xs = data.map(d => d[xKey]);
@@ -53,7 +57,7 @@ const sd = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / (residuals.lengt
 const trendPoints = allTrendPoints.filter(p => p.y <= 98);
 const bandPoints = allTrendPoints.filter(p => p.y - sd >= 50 && p.y + sd <= 102);
 
-const yieldStep = 10, gradStep = 5;
+const yieldStep = 5, gradStep = 5;
 const yieldStart = Math.floor(xMin / yieldStep) * yieldStep;
 const yieldEnd   = Math.ceil(xMax  / yieldStep) * yieldStep;
 const grid = [];
@@ -62,12 +66,23 @@ for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
     grid.push({x1, x2: x1 + yieldStep, y1, y2: y1 + gradStep});
   }
 }
-const emptyRects = grid.filter(q =>
-  !data.some(d =>
+const edgeRects = grid.filter(q => q.x1 === 20 || (q.y1 === 50 && q.x1 < 25));
+const cellCounts = grid.map(q => ({
+  ...q,
+  count: data.filter(d =>
     d.yield_rate    >= q.x1 && d.yield_rate    < q.x2 &&
     d.grad_rate_6yr >= q.y1 && d.grad_rate_6yr < q.y2
-  )
-);
+  ).length
+})).filter(q => q.count > 0);
+
+const colCounts = d3.range(yieldStart, yieldEnd, yieldStep).map(x1 => ({
+  x: x1 + yieldStep / 2,
+  count: data.filter(d => d.yield_rate >= x1 && d.yield_rate < x1 + yieldStep).length
+}));
+const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
+  y: y1 + gradStep / 2,
+  count: data.filter(d => d.grad_rate_6yr >= y1 && d.grad_rate_6yr < y1 + gradStep).length
+}));
 ```
 
 ```js
@@ -82,16 +97,20 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   const baseColor = d => d.sector_label === "Public" ? "orange" : "steelblue";
   const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
 
-  display(Plot.plot({
+  const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
+
+  const plt = Plot.plot({
     width: 800,
     height: 600,
     marginLeft: 50,
     marginBottom: 50,
-    grid: true,
-    x: { label: "Yield rate (%)" },
+    marginTop: 24,
+    marginRight: 30,
+    x: { label: "Yield rate (%)", ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5) },
     y: { label: "6-year graduation rate (%)", domain: [50, 100] },
     marks: [
-      Plot.rect(emptyRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f7f7f7"}),
+      Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "white"}),
+      Plot.rect(edgeRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f9f9f9"}),
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
@@ -107,10 +126,41 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
           "Yield": "yield_rate",
         },
       }),
-      Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
-      Plot.ruleY([79.5], {stroke: "green", strokeWidth: 1, strokeDasharray: "4,4"}),
+      Plot.text(cellCounts, {x: "x1", y: "y1", text: "count", textAnchor: "start", lineAnchor: "bottom", dx: 3, dy: -2, fontSize: 9, fontFamily: "sans-serif", fill: "#aaa"}),
+      Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
+      Plot.text(rowCounts, {x: xMax, y: "y", text: "count", textAnchor: "start", dx: 6, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
+      Plot.gridX({ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5)}),
+      Plot.gridY({ticks: d3.range(50, 101, 5)}),
+      Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
+      Plot.ruleY([85], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
       Plot.crosshair(data, {x: "yield_rate", y: "grad_rate_6yr", color: "#555"}),
     ],
-  }));
+  });
+
+  plt.addEventListener("click", evt => {
+    const r = plt.getBoundingClientRect();
+    const xs = plt.scale("x");
+    const ys = plt.scale("y");
+    if (!xs || !ys) return;
+    const xVal = xs.invert(evt.clientX - r.left);
+    const yVal = ys.invert(evt.clientY - r.top);
+    const x1 = Math.floor(xVal / yieldStep) * yieldStep;
+    const y1 = Math.floor(yVal / gradStep) * gradStep;
+    const matches = data.filter(d =>
+      d.yield_rate    >= x1 && d.yield_rate    < x1 + yieldStep &&
+      d.grad_rate_6yr >= y1 && d.grad_rate_6yr < y1 + gradStep
+    );
+    cardArea.innerHTML = "";
+    if (matches.length === 0) return;
+    const noun = matches.length === 1 ? "school" : "schools";
+    const header = html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
+      <strong>${matches.length} ${noun}</strong> with ${x1}–${x1 + yieldStep}% yield and ${y1}–${y1 + gradStep}% graduation rate
+    </p>`;
+    cardArea.append(header);
+    for (const school of matches) cardArea.append(collegeCard(school));
+  });
+
+  display(plt);
+  display(cardArea);
 }
 ```

@@ -46,17 +46,48 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     const t = Math.max(0, Math.min(1, (normalized - 0.03) / (1.0 - 0.03)));
     return 18 + t * (142 - 18);
   }
-  const headerBg    = rate == null ? "#e5e7eb" : `hsl(${admissionHue(rate)}, 68%, 88%)`;
-  const headerColor = rate == null ? "#374151" : `hsl(${admissionHue(rate)}, 72%, 28%)`;
+  const headerBg    = "#f3f4f6";
+  const headerColor = "#374151";
 
   // ── Section 1: header stats ──────────────────────────────────────────────
-  const admRate = rate != null
-    ? (rate > 1 ? `${rate.toFixed(1)}% admit` : `${(rate * 100).toFixed(1)}% admit`)
-    : null;
+  function admitPie(r) {
+    const pct = r > 1 ? r : r * 100;
+    const admit = Math.min(1, Math.max(0, pct / 100));
+    const size = 14;
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    canvas.style.verticalAlign = "middle";
+    canvas.style.margin = "-1px 0";
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    const cx = size / 2, cy = size / 2, rad = size / 2;
+    // Red full circle (rejects)
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
+    ctx.fillStyle = "#dc2626";
+    ctx.fill();
+    // Green sector (admits), starting at 12 o'clock
+    const start = -Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, rad, start, start + admit * 2 * Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = "#16a34a";
+    ctx.fill();
+    return canvas;
+  }
+  const admRate = rate != null ? admitPie(rate) : null;
+  const displayName = school.INSTNM.replace(/\bUniversity\b/g, "U.");
+  const sectorLabel = (school.sector_label || "").replace(/\s*(nonprofit|for-profit)\s*/i, "").trim();
+  const wikiUrl  = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
+  const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(school.CITY + ", " + school.STABBR)}`;
+
   const statItems = [
-    school.sector_label,
-    school.locale_group || null,
-    school.enrollment_ug != null ? `${num(school.enrollment_ug)} undergrads` : null,
+    school.enrollment_ug != null ? `${num(Math.round(school.enrollment_ug / 100) * 100)} undergrads` : null,
     school.yield_rate    != null ? `${pct(school.yield_rate)} yield`         : null,
     school.grad_rate_6yr != null ? `${pct(school.grad_rate_6yr)} grad`       : null,
     admRate,
@@ -66,11 +97,20 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     +school.tribal === 1 ? "Tribal" : null,
   ].filter(Boolean);
 
+  const badgeStyle = `font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;`;
   const header = html`<div style="background:${headerBg}; padding:0.75rem 1rem 0.65rem;">
-    <strong style="color:${headerColor}; font-size:0.95rem; line-height:1.3; display:block;">${school.INSTNM}</strong>
-    <div style="color:${headerColor}; opacity:0.8; font-size:0.78rem; margin-top:0.1rem;">${school.CITY}, ${school.STABBR}</div>
+    <div style="display:flex; align-items:baseline; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.1rem;">
+      <strong style="color:${headerColor}; font-size:0.95rem; line-height:1.3;">
+        <a href="${wikiUrl}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;">${displayName}</a>
+      </strong>
+      ${sectorLabel ? html`<span style="${badgeStyle}">${sectorLabel}</span>` : html``}
+    </div>
+    <div style="color:${headerColor}; opacity:0.8; font-size:0.78rem;">
+      <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
+      ${school.locale_group ? html` · ${school.locale_group}` : html``}
+    </div>
     <div style="margin-top:0.45rem; display:flex; flex-wrap:wrap; gap:0.3rem;">
-      ${statItems.map(s => html`<span style="font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;">${s}</span>`)}
+      ${statItems.map(s => html`<span style="${badgeStyle}">${s}</span>`)}
     </div>
   </div>`;
 
@@ -120,7 +160,6 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
   const websiteUrl = school.WEBADDR
     ? (school.WEBADDR.startsWith("http") ? school.WEBADDR : "https://" + school.WEBADDR)
     : null;
-  const wikiUrl   = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
   const usnewsUrl = `https://www.usnews.com/best-colleges/search?name=${encodeURIComponent(school.INSTNM)}`;
 
   const externalLinks = html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.78rem;">
