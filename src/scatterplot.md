@@ -117,14 +117,6 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
         r: d => match(d) ? 6 : 3,
         fill: d => match(d) ? hiColor(d) : baseColor(d),
         fillOpacity: d => match(d) ? 1 : 0.5,
-        tip: true,
-        channels: {
-          School: "INSTNM",
-          State: "STABBR",
-          "Public/Private": "sector_label",
-          "Grad rate (6yr)": "grad_rate_6yr",
-          "Yield": "yield_rate",
-        },
       }),
       Plot.text(cellCounts, {x: "x1", y: "y1", text: "count", textAnchor: "start", lineAnchor: "bottom", dx: 3, dy: -2, fontSize: 9, fontFamily: "sans-serif", fill: "#aaa"}),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
@@ -136,6 +128,36 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       Plot.crosshair(data, {x: "yield_rate", y: "grad_rate_6yr", color: "#555"}),
     ],
   });
+
+  const tipEl = html`<div style="position:absolute; display:none; background:white; border:1px solid #ddd; border-radius:6px; padding:0.4rem 0.65rem; font-size:0.8rem; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.12); max-width:240px; line-height:1.5;"></div>`;
+  const wrapper = html`<div style="position:relative; display:inline-block;"></div>`;
+  wrapper.append(plt);
+  wrapper.append(tipEl);
+
+  plt.addEventListener("pointermove", evt => {
+    const xs = plt.scale("x"), ys = plt.scale("y");
+    if (!xs || !ys) return;
+    const rect = plt.getBoundingClientRect();
+    const xVal = xs.invert(evt.clientX - rect.left);
+    const yVal = ys.invert(evt.clientY - rect.top);
+    let nearest = null, minDist = Infinity;
+    for (const d of data) {
+      const dist = (d.yield_rate - xVal) ** 2 + (d.grad_rate_6yr - yVal) ** 2;
+      if (dist < minDist) { minDist = dist; nearest = d; }
+    }
+    if (nearest && minDist < 30) {
+      const sector = nearest.sector_label === "Public" ? "Public" : "Private";
+      tipEl.innerHTML = `<strong>${nearest.INSTNM}</strong><br>${sector} school in ${nearest.CITY}, ${nearest.STABBR}<br><span style="color:#555">Grad rate: ${nearest.grad_rate_6yr}% &nbsp;·&nbsp; Yield: ${nearest.yield_rate}%</span>`;
+      const offX = evt.clientX - rect.left + 14;
+      const offY = evt.clientY - rect.top - 10;
+      tipEl.style.left = offX + "px";
+      tipEl.style.top  = offY + "px";
+      tipEl.style.display = "block";
+    } else {
+      tipEl.style.display = "none";
+    }
+  });
+  plt.addEventListener("pointerleave", () => { tipEl.style.display = "none"; });
 
   plt.addEventListener("click", evt => {
     const r = plt.getBoundingClientRect();
@@ -160,7 +182,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     for (const school of matches) cardArea.append(collegeCard(school));
   });
 
-  display(plt);
+  display(wrapper);
   display(cardArea);
 }
 ```
