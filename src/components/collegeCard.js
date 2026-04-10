@@ -28,122 +28,178 @@ export function getTier(unitid) {
   return null;
 }
 
-// schoolPrograms: [{cip_family, cip_label, total_awards}] for this school only
-// cipSchoolCounts: Map<cip_family, number> — how many schools offer each family
+// ── Prose helpers ────────────────────────────────────────────────────────────
+
+function instKind(school) {
+  const ic   = school.ic2025name || "";
+  const name = school.INSTNM || "";
+  const hasUniv = /university/i.test(name);
+  if (/Graduate-Doctorate/i.test(ic))               return hasUniv ? "university" : "doctoral university";
+  if (/Graduate-Master/i.test(ic))                  return hasUniv ? "university" : "college";
+  if (/Special Focus: Arts and Sciences/i.test(ic)) return "liberal arts college";
+  if (/Special Focus: Arts, Music/i.test(ic))       return "arts and design college";
+  if (/Special Focus: Business/i.test(ic))          return "business college";
+  if (/Special Focus: Medical/i.test(ic))           return "medical school";
+  if (/Special Focus: Theolog/i.test(ic))           return "theological school";
+  if (/Special Focus: Nursing/i.test(ic))           return "nursing college";
+  if (/Special Focus: Technology/i.test(ic))        return "technical college";
+  if (/Special Focus: Law/i.test(ic))               return "law school";
+  return hasUniv ? "university" : "college";
+}
+
+function sectorAdjective(sector) {
+  if (/public/i.test(sector))    return "public";
+  if (/nonprofit/i.test(sector)) return "private";
+  if (/for.profit/i.test(sector)) return "for-profit";
+  return "";
+}
+
+function localePhrase(locale) {
+  return { City: "an urban area", Suburb: "a suburban area", Town: "a small town", Rural: "a rural area" }[locale] || null;
+}
+
+function roughEnroll(n) {
+  if (n >= 20000) return Math.round(n / 5000) * 5000;
+  if (n >= 5000)  return Math.round(n / 1000) * 1000;
+  if (n >= 1000)  return Math.round(n / 500) * 500;
+  return Math.round(n / 100) * 100;
+}
+
+function buildProse(school) {
+  const p1 = [], p2 = [];
+
+  // ── Para 1: identity, location, designations, size ───────────────────────
+  const kind   = instKind(school);
+  const sector = sectorAdjective(school.sector_label || "");
+  const locale = localePhrase(school.locale_group);
+  const typeStr = sector ? `${sector} ${kind}` : kind;
+
+  let s1 = `${school.INSTNM} is a ${typeStr} in ${school.CITY}, ${school.STABBR}`;
+  if (locale) s1 += `, ${locale}`;
+  s1 += ".";
+  p1.push(s1);
+
+  // Religious affiliation
+  const rel = school.relaffil_label;
+  if (rel) p1.push(`It is affiliated with the ${rel}.`);
+
+  // Special designations
+  const specials = [
+    +school.hbcu     === 1 ? "a Historically Black College or University (HBCU)" : null,
+    +school.hsi      === 1 ? "a Hispanic-Serving Institution (HSI)" : null,
+    +school.womenonly === 1 ? "a women's college" : null,
+    +school.tribal   === 1 ? "a Tribal College" : null,
+    +school.landgrant === 1 ? "a land-grant institution" : null,
+  ].filter(Boolean);
+  if (specials.length === 1) p1.push(`It is ${specials[0]}.`);
+  else if (specials.length > 1) p1.push(`It is ${specials.slice(0, -1).join(", ")} and ${specials.at(-1)}.`);
+
+  // Enrollment
+  if (school.enrollment_ug != null) {
+    const ug = roughEnroll(school.enrollment_ug);
+    let s = `It enrolls about ${ug.toLocaleString()} undergraduates`;
+    if (school.enrollment_total != null && school.enrollment_total > 0) {
+      const gradFrac = (school.enrollment_total - school.enrollment_ug) / school.enrollment_total;
+      if (gradFrac > 0.35)      s += `, along with a large graduate population`;
+      else if (gradFrac > 0.15) s += `, plus some graduate students`;
+    }
+    s += ".";
+    p1.push(s);
+  }
+
+  // ── Para 2: selectivity, cost, outcomes ──────────────────────────────────
+
+  // Admission rate + grad rate (combined sentence)
+  const admRate  = school.admission_rate;
+  const gradRate = school.grad_rate_6yr;
+  if (admRate != null || gradRate != null) {
+    const parts = [];
+    if (admRate != null) {
+      const r   = admRate > 1 ? admRate / 100 : admRate;
+      const pct = Math.round(r * 100);
+      if (r < 0.15)      parts.push(`just ${pct}% of applicants are admitted`);
+      else if (r < 0.35) parts.push(`${pct}% of applicants are admitted`);
+      else if (r < 0.75) parts.push(`${pct}% of applicants are accepted`);
+      else               parts.push(`${pct}% of applicants are accepted — broadly accessible`);
+    }
+    if (gradRate != null) {
+      const g = Math.round(gradRate);
+      parts.push(`${g}% of students graduate within six years`);
+    }
+    if (parts.length === 2) {
+      p2.push(`${parts[0][0].toUpperCase()}${parts[0].slice(1)}, and ${parts[1]}.`);
+    } else if (parts.length === 1) {
+      p2.push(`${parts[0][0].toUpperCase()}${parts[0].slice(1)}.`);
+    }
+  }
+
+  // Net price + Pell
+  const netPrice = school.net_price;
+  const pell     = school.pell_2023;
+  if (netPrice != null || pell != null) {
+    const parts = [];
+    if (netPrice != null) parts.push(`the average net price is $${Math.round(netPrice).toLocaleString()} per year`);
+    if (pell != null)     parts.push(`${Math.round(pell * 100)}% of students receive Pell grants`);
+    const s = parts.join("; ");
+    p2.push(`${s[0].toUpperCase()}${s.slice(1)}.`);
+  }
+
+  // Earnings
+  if (school.saec_earnings) {
+    let s = `Graduates earn a median of $${Math.round(school.saec_earnings).toLocaleString()} eight years after enrollment`;
+    if (school.earnings_ratio != null) {
+      const r = Number(school.earnings_ratio);
+      if (r >= 1.15)      s += `, above average for similar institutions`;
+      else if (r <= 0.85) s += `, below average for similar institutions`;
+    }
+    s += ".";
+    p2.push(s);
+  }
+
+  return { p1, p2 };
+}
+
+// ── schoolPrograms: [{cip_family, cip_label, total_awards}] for this school
+// ── cipSchoolCounts: Map<cip_family, number> — how many schools offer each
 export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new Map()) {
   if (!school) return html``;
 
-  const pct    = (v, decimals = 0) => v != null ? `${Number(v).toFixed(decimals)}%` : "—";
-  const num    = (v) => v != null ? Number(v).toLocaleString() : "—";
-  const dollar = (v) => v != null ? "$" + Math.round(Number(v)).toLocaleString() : "—";
+  const wikiUrl    = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
+  const mapsUrl    = `https://maps.google.com/?q=${encodeURIComponent(school.CITY + ", " + school.STABBR)}`;
+  const usnewsUrl  = `https://www.usnews.com/best-colleges/search?name=${encodeURIComponent(school.INSTNM)}`;
+  const websiteUrl = school.WEBADDR
+    ? (school.WEBADDR.startsWith("http") ? school.WEBADDR : "https://" + school.WEBADDR)
+    : null;
 
-  const rate = school.admission_rate;
-  function admissionHue(r) {
-    // 0.003 (most selective) → hue 18 (orangey-red)
-    // 1.0 (open admission) → hue 142 (green)
-    // Handle both 0–1 and 0–100 scales
-    const normalized = r > 1 ? r / 100 : r;
-    const t = Math.max(0, Math.min(1, (normalized - 0.03) / (1.0 - 0.03)));
-    return 18 + t * (142 - 18);
-  }
-  const headerBg    = "#f3f4f6";
-  const headerColor = "#374151";
+  const displayName  = school.INSTNM.replace(/\bUniversity\b/g, "U.");
+  const headerBg     = "#f3f4f6";
+  const headerColor  = "#374151";
+  const badgeStyle   = `font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;`;
 
-  // ── Section 1: header stats ──────────────────────────────────────────────
-  function admitPie(r) {
-    const pct = r > 1 ? r : r * 100;
-    const admit = Math.min(1, Math.max(0, pct / 100));
-    const size = 14;
-    const dpr = window.devicePixelRatio || 1;
-    const canvas = document.createElement("canvas");
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    canvas.style.width = size + "px";
-    canvas.style.height = size + "px";
-    canvas.style.verticalAlign = "middle";
-    canvas.style.margin = "-1px 0";
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    const cx = size / 2, cy = size / 2, rad = size / 2;
-    // Red full circle (rejects)
-    ctx.beginPath();
-    ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
-    ctx.fillStyle = "#dc2626";
-    ctx.fill();
-    // Green sector (admits), starting at 12 o'clock
-    const start = -Math.PI / 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, rad, start, start + admit * 2 * Math.PI);
-    ctx.closePath();
-    ctx.fillStyle = "#16a34a";
-    ctx.fill();
-    return canvas;
-  }
-  const admRate = rate != null ? admitPie(rate) : null;
-  const displayName = school.INSTNM.replace(/\bUniversity\b/g, "U.");
-  const sectorLabel = (school.sector_label || "").replace(/\s*(nonprofit|for-profit)\s*/i, "").trim();
-  const wikiUrl  = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
-  const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(school.CITY + ", " + school.STABBR)}`;
-
-  const statItems = [
-    school.enrollment_ug != null ? `${num(Math.round(school.enrollment_ug / 100) * 100)} undergrads` : null,
-    school.yield_rate    != null ? `${pct(school.yield_rate)} yield`         : null,
-    school.grad_rate_6yr != null ? `${pct(school.grad_rate_6yr)} grad`       : null,
-    admRate,
-    +school.hbcu === 1 ? "HBCU" : null,
-    +school.hsi  === 1 ? "HSI"  : null,
-    +school.womenonly === 1 ? "Women's" : null,
-    +school.tribal === 1 ? "Tribal" : null,
-  ].filter(Boolean);
-
-  const badgeStyle = `font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;`;
+  // ── Section 1: header ────────────────────────────────────────────────────
   const header = html`<div style="background:${headerBg}; padding:0.75rem 1rem 0.65rem;">
-    <div style="display:flex; align-items:baseline; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.1rem;">
+    <div style="display:flex; align-items:baseline; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.15rem;">
       <strong style="font-size:0.95rem; line-height:1.3;">
         <a href="${wikiUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${displayName}</a>
       </strong>
-      ${sectorLabel ? html`<span style="${badgeStyle}">${sectorLabel}</span>` : html``}
     </div>
-    <div style="color:${headerColor}; opacity:0.8; font-size:0.78rem;">
+    <div style="font-size:0.78rem; color:${headerColor}; opacity:0.8;">
       <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
       ${school.locale_group ? html` · <span style="${badgeStyle}">${school.locale_group}</span>` : html``}
     </div>
-    <div style="margin-top:0.45rem; display:flex; flex-wrap:wrap; gap:0.3rem;">
-      ${statItems.map(s => html`<span style="${badgeStyle}">${s}</span>`)}
-    </div>
   </div>`;
 
-  // ── Section 2: Carnegie classification ───────────────────────────────────
-  const carnegieItems = [
-    school.ic2025name     ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Type:</span> ${school.ic2025name}</div>` : html``,
-    school.saec2025name   ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">SAEC:</span> ${school.saec2025name}</div>` : html``,
-    school.research2025name ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Research:</span> ${school.research2025name}</div>` : html``,
-    school.setting2025name  ? html`<div style="font-size:0.75rem; color:#555;"><span style="color:#888;">Setting:</span> ${school.setting2025name}</div>` : html``,
-  ];
+  // ── Section 2: prose ─────────────────────────────────────────────────────
+  const { p1, p2 } = buildProse(school);
 
-  const carnegieSection = (school.ic2025name || school.saec2025name)
-    ? html`<div style="padding:0.55rem 1rem; border-bottom:1px solid #f0f0f0;">
-        ${carnegieItems}
-      </div>`
-    : html``;
+  const prosePara = (sentences) => html`<p style="margin:0; font-size:0.8rem; color:#333; line-height:1.65;">${sentences.join(" ")}</p>`;
 
-  // ── Section 3: earnings & equity ─────────────────────────────────────────
-  const earningsItems = [];
-  if (school.saec_earnings) earningsItems.push(`Median earnings: ${dollar(school.saec_earnings)}`);
-  if (school.earnings_ratio) earningsItems.push(`${Number(school.earnings_ratio).toFixed(2)}× vs peers`);
-  if (school.net_price) earningsItems.push(`Net price: ${dollar(school.net_price)}`);
-  if (school.pell_2023 != null) {
-    earningsItems.push(`${(school.pell_2023 * 100).toFixed(1)}% Pell`);
-  }
+  const proseSection = html`<div style="padding:0.7rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-direction:column; gap:0.45rem;">
+    ${prosePara(p1)}
+    ${p2.length > 0 ? prosePara(p2) : html``}
+  </div>`;
 
-  const earningsSection = earningsItems.length > 0
-    ? html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.76rem; color:#555; display:flex; flex-wrap:wrap; gap:0.5rem 1rem;">
-        ${earningsItems.map(e => html`<span>${e}</span>`)}
-      </div>`
-    : html``;
-
-  // ── Section 4: majors ────────────────────────────────────────────────────
+  // ── Section 3: majors ────────────────────────────────────────────────────
   const topMajors = [...schoolPrograms]
     .sort((a, b) => b.total_awards - a.total_awards)
     .slice(0, 5);
@@ -156,18 +212,13 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     <div><span style="font-weight:600; color:#555;">Distinctive:</span> ${distinctiveMajors.map(p => p.cip_label).join(", ")}</div>
   </div>`;
 
-  // ── Section 5: external links ────────────────────────────────────────────
-  const websiteUrl = school.WEBADDR
-    ? (school.WEBADDR.startsWith("http") ? school.WEBADDR : "https://" + school.WEBADDR)
-    : null;
-  const usnewsUrl = `https://www.usnews.com/best-colleges/search?name=${encodeURIComponent(school.INSTNM)}`;
-
+  // ── Section 4: external links ────────────────────────────────────────────
   const externalLinks = html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.78rem;">
     ${websiteUrl ? html`<a href="${websiteUrl}" target="_blank" rel="noopener" style="color:#2563eb;">Website ↗</a>` : html``}
     <a href="${usnewsUrl}" target="_blank" rel="noopener" style="color:#2563eb;">US News ↗</a>
   </div>`;
 
-  // ── Section 6: save to deck ──────────────────────────────────────────────
+  // ── Section 5: save to deck ──────────────────────────────────────────────
   const tierStyles = {
     definitely: { active: { bg: "#dcfce7", color: "#166534", border: "#86efac" }, label: "Definitely" },
     probably:   { active: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" }, label: "Probably"   },
@@ -185,8 +236,7 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
 
   const card = html`<div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; font-size:0.9rem; background:var(--theme-background,#fff);">
     ${header}
-    ${carnegieSection}
-    ${earningsSection}
+    ${proseSection}
     ${majorsSection}
     ${externalLinks}
     ${saveSection}
