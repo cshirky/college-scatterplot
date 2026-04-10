@@ -100,14 +100,14 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
   const badgeStyle = `font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;`;
   const header = html`<div style="background:${headerBg}; padding:0.75rem 1rem 0.65rem;">
     <div style="display:flex; align-items:baseline; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.1rem;">
-      <strong style="color:${headerColor}; font-size:0.95rem; line-height:1.3;">
-        <a href="${wikiUrl}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;">${displayName}</a>
+      <strong style="font-size:0.95rem; line-height:1.3;">
+        <a href="${wikiUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${displayName}</a>
       </strong>
       ${sectorLabel ? html`<span style="${badgeStyle}">${sectorLabel}</span>` : html``}
     </div>
     <div style="color:${headerColor}; opacity:0.8; font-size:0.78rem;">
-      <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
-      ${school.locale_group ? html` · ${school.locale_group}` : html``}
+      <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
+      ${school.locale_group ? html` · <span style="${badgeStyle}">${school.locale_group}</span>` : html``}
     </div>
     <div style="margin-top:0.45rem; display:flex; flex-wrap:wrap; gap:0.3rem;">
       ${statItems.map(s => html`<span style="${badgeStyle}">${s}</span>`)}
@@ -164,7 +164,6 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
 
   const externalLinks = html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.78rem;">
     ${websiteUrl ? html`<a href="${websiteUrl}" target="_blank" rel="noopener" style="color:#2563eb;">Website ↗</a>` : html``}
-    <a href="${wikiUrl}"   target="_blank" rel="noopener" style="color:#2563eb;">Wikipedia ↗</a>
     <a href="${usnewsUrl}" target="_blank" rel="noopener" style="color:#2563eb;">US News ↗</a>
   </div>`;
 
