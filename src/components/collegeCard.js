@@ -109,28 +109,11 @@ function buildProse(school) {
 
   // ── Para 2: selectivity, cost, outcomes ──────────────────────────────────
 
-  // Admission rate + grad rate (combined sentence)
-  const admRate  = school.admission_rate;
+  // Grad rate
   const gradRate = school.grad_rate_6yr;
-  if (admRate != null || gradRate != null) {
-    const parts = [];
-    if (admRate != null) {
-      const r   = admRate > 1 ? admRate / 100 : admRate;
-      const pct = Math.round(r * 100);
-      if (r < 0.15)      parts.push(`just ${pct}% of applicants are admitted`);
-      else if (r < 0.35) parts.push(`${pct}% of applicants are admitted`);
-      else if (r < 0.75) parts.push(`${pct}% of applicants are accepted`);
-      else               parts.push(`${pct}% of applicants are accepted — broadly accessible`);
-    }
-    if (gradRate != null) {
-      const g = Math.round(gradRate);
-      parts.push(`${g}% of students graduate within six years`);
-    }
-    if (parts.length === 2) {
-      p2.push(`${parts[0][0].toUpperCase()}${parts[0].slice(1)}, and ${parts[1]}.`);
-    } else if (parts.length === 1) {
-      p2.push(`${parts[0][0].toUpperCase()}${parts[0].slice(1)}.`);
-    }
+  if (gradRate != null) {
+    const g = Math.round(gradRate);
+    p2.push(`${g}% of students graduate within six years.`);
   }
 
   // Net price + Pell
@@ -176,17 +159,61 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
   const headerColor  = "#374151";
   const badgeStyle   = `font-size:0.72rem; background:${headerColor}22; color:${headerColor}; border-radius:3px; padding:0.1rem 0.35rem; font-weight:500;`;
 
+  function admitPie(r) {
+    const admit = Math.min(1, Math.max(0, (r > 1 ? r / 100 : r)));
+    const size = 14;
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    canvas.style.verticalAlign = "middle";
+    canvas.style.margin = "-1px 0";
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    const cx = size / 2, cy = size / 2, rad = size / 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
+    ctx.fillStyle = "#dc2626";
+    ctx.fill();
+    const start = -Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, rad, start, start + admit * 2 * Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = "#16a34a";
+    ctx.fill();
+    return canvas;
+  }
+
+  const pct = (v) => v != null ? `${Number(v).toFixed(0)}%` : null;
+  const admPie = school.admission_rate != null ? admitPie(school.admission_rate) : null;
+  if (admPie) {
+    const r = school.admission_rate > 1 ? school.admission_rate / 100 : school.admission_rate;
+    admPie.title = `${Math.round(r * 100)}% admission rate`;
+  }
+  const admRate = admPie;
+
+  const statItems = [
+    school.yield_rate    != null ? `${pct(school.yield_rate)} yield`   : null,
+    school.grad_rate_6yr != null ? `${pct(school.grad_rate_6yr)} grad` : null,
+    admRate,
+  ].filter(Boolean);
+
   // ── Section 1: header ────────────────────────────────────────────────────
   const header = html`<div style="background:${headerBg}; padding:0.75rem 1rem 0.65rem;">
     <div style="display:flex; align-items:baseline; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.15rem;">
       <strong style="font-size:0.95rem; line-height:1.3;">
         <a href="${wikiUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${displayName}</a>
       </strong>
+      <span style="font-size:0.78rem; color:${headerColor}; opacity:0.8;">
+        <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
+      </span>
     </div>
-    <div style="font-size:0.78rem; color:${headerColor}; opacity:0.8;">
-      <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:none;">${school.CITY}, ${school.STABBR}</a>
-      ${school.locale_group ? html` · <span style="${badgeStyle}">${school.locale_group}</span>` : html``}
-    </div>
+    ${statItems.length > 0 ? html`<div style="margin-top:0.45rem; display:flex; flex-wrap:wrap; gap:0.3rem; align-items:center;">
+      ${statItems.map(s => html`<span style="${badgeStyle}">${s}</span>`)}
+    </div>` : html``}
   </div>`;
 
   // ── Section 2: prose ─────────────────────────────────────────────────────
