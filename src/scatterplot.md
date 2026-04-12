@@ -1,45 +1,7 @@
-```js
-import {collegeCard} from "./components/collegeCard.js";
-```
+# College Scatterplot
 
 ```js
-{
-  const imgUrl = await FileAttachment("scatterplot_all_schools.png").url();
-  const details = html`<details open style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
-  <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
-    What (and who) this is for
-    <span class="toggle-hint" style="font-size:0.8rem; font-weight:400; color:#888;">click to close</span>
-  </summary>
-  <div style="margin-top:0.75rem; font-size:0.9rem; line-height:1.7; color:#333; max-width:720px;">
-    <p>This is an opinionated guide to U.S. colleges. It assumes you are:</p>
-    <ul>
-      <li>An American high school student…</li>
-      <li>…with a B- grade average or better</li>
-      <li>…who wants a Bachelor's degree</li>
-      <li>…at a college that has lots of options for majors</li>
-      <li>…where you study full-time and live on campus.</li>
-    </ul>
-    <p>If that describes you, the visualization below is designed to help you explore your options. I'll start with three assertions:</p>
-    <ol>
-      <li>High school students spend too much time worrying about whether they will be accepted and not enough time trying to get a sense of the places they might fit. This is for you to get a sense of the layout of American higher ed generally.</li>
-      <li>If you have a dream school, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
-      <li>A college's acceptance rate is a bullshit number. A college becomes "more selective" by convincing more students to apply. Acceptance rate is a measure of advertising, not real student interest.</li>
-    </ol>
-    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. And to be fair, there are lots of reasons you might add a school to your list — size, locale, majors offered, and so on. But the two numbers that matter most are Yield, and 6 Year Graduation rate.</p>
-    <p><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go. Unlike Acceptance Rate, Yield represents a real choice, not just a checkbox on the Common App. If a school offers a spot to 100 students, and only 10 choose to go there, that tells you something very different than if 40 choose to go: School A is a safety, School B has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body. (Colleges don't like to talk about Yield, because the students control it, not their marketing department.)</p>
-    <p><strong>6 Year Graduation Rate</strong> is just what it sounds like: for any given incoming class, how many students graduated with a Bachelor's degree 6 years later? (The Bachelor's is often called a 4 year degree, but many students take a bit more time to finish.) Graduation rate is a blended measurement, capturing how prepared and serious the students are, and how well the college supports them. Graduation rate is the single most important metric — if many students drop out or transfer out before graduating, it does not matter how the campus looks in the fall.</p>
-    <p>This is a chart of 1,500 American colleges, with graduation rate as the vertical measure and yield the horizontal one:</p>
-    <img src="${imgUrl}" style="max-width:100%; margin:0.5rem 0 1rem; display:block;" alt="Scatterplot of all colleges by yield and graduation rate">
-    <p>You can see a couple of things from this graph: about half of these colleges have a yield of lower than 20%, which is to say that more than 4 out of 5 students offered a place there turned them down. About a third of colleges have a graduation rate of below 50%.</p>
-    <p>Below is an interactive version of this chart, limited to schools with a) yield of 20% or above and b) graduation rate of 50% or above with c) a broad student body and curriculum (not an arts or engineering school, not a school for people with a particular ethnicity or religious identity) where d) many students live on campus and study full time.</p>
-    <p>Click any dot to see a school card; use the buttons on the card to save schools to your list.</p>
-  </div>
-</details>`;
-  details.addEventListener("toggle", () => {
-    details.querySelector(".toggle-hint").textContent = details.open ? "click to close" : "click to expand";
-  });
-  display(details);
-}
+import { collegeCard } from "./components/collegeCard.js";
 ```
 
 ```js
@@ -52,9 +14,9 @@ const data = good_schools
                !isNaN(d.grad_rate_6yr) && !isNaN(d.yield_rate))
   .map(d => ({...d, yield_rate: Math.round(d.yield_rate)}));
 
-function polyFit(data, xKey, yKey, degree) {
-  const xs = data.map(d => d[xKey]);
-  const ys = data.map(d => d[yKey]);
+function polyFit(dataArr, xKey, yKey, degree) {
+  const xs = dataArr.map(d => d[xKey]);
+  const ys = dataArr.map(d => d[yKey]);
   const cols = degree + 1;
   const XtX = Array.from({length: cols}, (_, i) =>
     Array.from({length: cols}, (_, j) =>
@@ -123,9 +85,58 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
 }));
 ```
 
-```html
-<h2 style="font-size:1rem; font-weight:600; color:#444; margin:1.5rem 0 0.5rem;">289 Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate</h2>
+```js
+{
+  const imgUrl = await FileAttachment("scatterplot_all_schools.png").url();
+  const details = html`<details open style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
+  <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
+    What (and who) this is for
+    <span class="toggle-hint" style="font-size:0.8rem; font-weight:400; color:#888;">click to close</span>
+  </summary>
+  <div style="margin-top:0.75rem; font-size:0.9rem; line-height:1.7; color:#333; max-width:720px;">
+    <p>This is an opinionated guide to picking U.S. colleges. It assumes you are:</p>
+    <ul>
+      <li>An American high school student…</li>
+      <li>…with a B- grade average or better</li>
+      <li>…who wants a Bachelor's degree</li>
+      <li>…at a college that has lots of options for majors</li>
+      <li>…where you study full-time and live on campus.</li>
+    </ul>
+    <p>If that describes you, the chart below, drawn from data collected in the Integrated Postsecondary Education Data System, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or an art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are all fine choices, but they are easier than picking among hundreds of broad curriculum residential schools.</p>
+    <p>I'll start with three assertions:</p>
+    <ol>
+      <li><strong>High school students spend too much time worrying</strong> about whether they will be accepted and not enough time trying to get a sense of the places they might like to go. This is for you to get a sense of the layout of American higher ed generally.</li>
+      <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
+      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. It's eaiser for a college to become "more selective" via better advertising than by improving the experience.</li>
+    </ol>
+    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
+    <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
+    <ul>
+      <li><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go. Unlike Acceptance Rate, Yield represents a real choice, not just a checkbox on the Common App. If a school offers a spot to 100 students, and only 10 choose to go there, that tells you something very different than if 40 choose to go: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body.</li>
+      <li><strong>6 Year Graduation Rate</strong> is just what it sounds like: for any given incoming class, how many students graduated with a Bachelor's degree 6 years later? (The Bachelor's is often called a 4 year degree, but many students take a bit more time.) Graduation rate is the single most important metric, capturing how prepared and serious the students are, and how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how the campus looks in the fall -- just don't apply.</li>
+    <p>Admissions rate does not measure any real tradeoffs. When the Common App went online in the late 90s, most of the selective colleges saw their admissions rates fall <em>even though there were no new students and no reductions in incoming classes</em>, because "Why not?" became the reigning logic of applying to Duke or UChicago, without represent any real commitment by students.</p> 
+    <p>Yield, on the other hand, is a <em>choice</em> -- if a student decides to go to one school, they are also deciding not to go to any other school they got into. If yield goes up at one college, it has to go down elsewhere, making it a non-bullshit measurement.(Colleges obsess over yield internally, but don't mention it to applicants because the students control it, not their marketing department.)</p>
+    <p>The chart below lists the tk colleges (including those inside universities) that have:</p>
+    <ol>
+      <li>10%+ Yield and 50%+ 6 year graduation rate</li>
+      <li>Offers more Bachelor's degrees than Associates degrees</li>
+      <li>Has a large group of students studying full-time, in person, and living on or near campus</li>
+      <li>Has a broad curriculum (a lot of potential majors)</li>
+      <ul>
+        <li>Which is just to say that this chart excludes schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries</li>
+      </ul>
+    </ol>
+    <p>Click any dot to see a school card. Click the triangle in any given Yield/Grad Rate square to see all the school cardss in that range.</p>
+  </div>
+</details>`;
+  details.addEventListener("toggle", () => {
+    details.querySelector(".toggle-hint").textContent = details.open ? "click to close" : "click to expand";
+  });
+  display(details);
+}
 ```
+
+## ${data.length} Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate
 
 ```js
 const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
@@ -141,9 +152,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
 
   const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
 
-  const triSize = 14; // pixel size of corner triangle
-
-  // cellCounts text is omitted from marks — drawn manually below for z-order control
+  const triSize = 14;
   const marginLeft = 65, marginRight = 45, marginTop = 24, marginBottom = 50;
   const plotWidth = 800, plotHeight = 600;
 
@@ -181,7 +190,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   const yRange = ys.range;
   const ns = "http://www.w3.org/2000/svg";
 
-  // Triangles inserted before the dot group so dots render on top; labels appended after
+  // Cell count triangles (inserted before dots so dots render on top)
   const triGroup = document.createElementNS(ns, "g");
   triGroup.setAttribute("fill", "#e5e7eb");
   triGroup.setAttribute("pointer-events", "none");
@@ -192,11 +201,11 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     poly.setAttribute("points", `${bx},${by} ${bx + triSize},${by} ${bx},${by - triSize}`);
     triGroup.appendChild(poly);
   }
-  // Find the <g> that contains the dot circles and insert triangles before it
   const dotG = svgEl?.querySelector("circle")?.closest("g");
   if (dotG?.parentElement) dotG.parentElement.insertBefore(triGroup, dotG);
   else svgEl?.appendChild(triGroup);
 
+  // Cell count labels (appended after dots)
   const labelGroup = document.createElementNS(ns, "g");
   labelGroup.setAttribute("font-size", "9");
   labelGroup.setAttribute("font-family", "sans-serif");
@@ -212,7 +221,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   }
   svgEl?.appendChild(labelGroup);
 
-  // Y-axis label running up the left side
+  // Y-axis label
   const plotCenterY = (marginTop + (plotHeight - marginBottom)) / 2;
   const yAxisLabel = document.createElementNS(ns, "text");
   yAxisLabel.setAttribute("transform", `translate(13, ${plotCenterY}) rotate(-90)`);
@@ -223,7 +232,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   yAxisLabel.textContent = "6-year graduation rate (%)";
   svgEl?.appendChild(yAxisLabel);
 
-  // X-axis label centered along the bottom
+  // X-axis label
   const plotCenterX = (marginLeft + (plotWidth - marginRight)) / 2;
   const xAxisLabel = document.createElementNS(ns, "text");
   xAxisLabel.setAttribute("x", plotCenterX);
@@ -249,7 +258,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     svgEl?.appendChild(t);
   }
 
-  // Manual crosshair lines — only shown when cursor is directly over a dot
+  // Crosshair lines
   const hLine = document.createElementNS(ns, "line");
   hLine.setAttribute("stroke", "#555");
   hLine.setAttribute("stroke-width", "0.5");
@@ -294,13 +303,12 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       tipEl.style.left = offX + "px";
       tipEl.style.top  = offY + "px";
       tipEl.style.display = "block";
-      // Crosshair only when cursor is pixel-close to the dot center
       const dotX = xs.apply(nearest.yield_rate);
       const dotY = ys.apply(nearest.grad_rate_6yr);
       const curX = evt.clientX - rect.left;
       const curY = evt.clientY - rect.top;
       const pixDist2 = (dotX - curX) ** 2 + (dotY - curY) ** 2;
-      if (pixDist2 < 36) { // within 6px of dot center
+      if (pixDist2 < 36) {
         hLine.setAttribute("y1", dotY);
         hLine.setAttribute("y2", dotY);
         hLine.style.display = "";
@@ -329,7 +337,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     const px = evt.clientX - r.left;
     const py = evt.clientY - r.top;
 
-    // First: check if clicking near a dot (pixel-space distance)
+    // Click near a dot
     let nearest = null, minDist = Infinity;
     for (const d of data) {
       const dx = xs.apply(d.yield_rate) - px;
@@ -337,11 +345,10 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       const dist = dx * dx + dy * dy;
       if (dist < minDist) { minDist = dist; nearest = d; }
     }
-    if (nearest && minDist < 36) { // within ~6px of dot center
+    if (nearest && minDist < 36) {
       cardArea.innerHTML = "";
       cardArea.append(collegeCard(nearest));
 
-      // If other schools share this cell, offer a "see all" link
       const cx1 = Math.floor(nearest.yield_rate / yieldStep) * yieldStep;
       const cy1 = Math.floor(nearest.grad_rate_6yr / gradStep) * gradStep;
       const cellmates = data.filter(d =>
@@ -368,9 +375,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       return;
     }
 
-    // Second: check if clicking inside a cell count triangle
-    // Vertices: (bx,by), (bx+triSize,by), (bx,by-triSize) — right angle at bottom-left
-    // Inside if: dx>=0, dy>=0, dx+dy<=triSize  (dy = by-py, since SVG y increases downward)
+    // Click on a cell count triangle
     for (const cell of cellCounts) {
       const bx = xs.apply(cell.x1);
       const by = ys.apply(cell.y1);
@@ -384,10 +389,9 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
         cardArea.innerHTML = "";
         if (matches.length === 0) return;
         const noun = matches.length === 1 ? "school" : "schools";
-        const header = html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
+        cardArea.append(html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
           <strong>${matches.length} ${noun}</strong> with ${cell.x1}–${cell.x2}% yield and ${cell.y1}–${cell.y2}% graduation rate
-        </p>`;
-        cardArea.append(header);
+        </p>`);
         for (const school of matches) cardArea.append(collegeCard(school));
         return;
       }
@@ -398,3 +402,4 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   display(cardArea);
 }
 ```
+
