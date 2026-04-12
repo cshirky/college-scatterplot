@@ -5,14 +5,57 @@ import { collegeCard } from "./components/collegeCard.js";
 ```
 
 ```js
-const good_schools = FileAttachment("data/good_schools.csv").csv({typed: true});
+const good_schools      = FileAttachment("data/good_schools.csv").csv({typed: true});
+const low_yield_schools = FileAttachment("data/low_yield_schools.csv").csv({typed: true});
 ```
 
 ```js
-const data = good_schools
+const [showLow, showMid] = view((() => {
+  let vals = [true, true];
+  const labels = ["10–19% yield schools", "20–25% yield schools"];
+  const btnStyle = "padding:0.35rem 0.9rem; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; font-size:0.84rem; color:#374151;";
+  const buttons = labels.map((label, i) => {
+    const btn = html`<button style="${btnStyle}">`;
+    const refresh = () => {
+      btn.textContent = (vals[i] ? "Exclude" : "Include") + " " + label;
+      btn.style.background = vals[i] ? "#f9fafb" : "#e5e7eb";
+    };
+    btn.onclick = () => {
+      vals = vals.map((v, j) => j === i ? !v : v);
+      refresh();
+      container.dispatchEvent(new Event("input", {bubbles: true}));
+    };
+    refresh();
+    return btn;
+  });
+  const container = html`<div style="display:flex; gap:0.5rem; margin:0.5rem 0;">${buttons[0]}${buttons[1]}</div>`;
+  Object.defineProperty(container, "value", { get: () => vals });
+  return container;
+})());
+```
+
+```js
+const data = [...good_schools, ...low_yield_schools]
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
-               !isNaN(d.grad_rate_6yr) && !isNaN(d.yield_rate))
-  .map(d => ({...d, yield_rate: Math.round(d.yield_rate)}));
+               !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
+  .filter(d => {
+    const y = Math.round(+d.yield_rate);
+    if (!showLow && y < 20) return false;
+    if (!showMid && y >= 20 && y <= 25) return false;
+    return true;
+  })
+  .map(d => {
+    const yr = Math.round(+d.yield_rate);
+    const gr = +d.grad_rate_6yr;
+    const uid = +d.UNITID;
+    return {
+      ...d,
+      yield_rate: yr,
+      grad_rate_6yr: gr,
+      yield_jittered: yr + Math.sin(uid * 127.1) * 2,
+      grad_jittered:  gr + Math.cos(uid * 83.7)  * 1.5,
+    };
+  });
 
 function polyFit(dataArr, xKey, yKey, degree) {
   const xs = dataArr.map(d => d[xKey]);
@@ -66,7 +109,8 @@ for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
     grid.push({x1, x2: x1 + yieldStep, y1, y2: y1 + gradStep});
   }
 }
-const edgeRects = grid.filter(q => q.x1 === 20 || (q.y1 === 50 && q.x1 < 25));
+const edgeRects       = grid.filter(q => q.x1 === 20 || (q.y1 === 50 && q.x1 < 25));
+const lowYieldBgRects = grid.filter(q => q.x1 >= 10 && q.x1 < 20);
 const cellCounts = grid.map(q => ({
   ...q,
   count: data.filter(d =>
@@ -102,23 +146,24 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
       <li>…at a college that has lots of options for majors</li>
       <li>…where you study full-time and live on campus.</li>
     </ul>
-    <p>If that describes you, the chart below, drawn from data collected in the Integrated Postsecondary Education Data System, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or an art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are all fine choices, but they are easier than picking among hundreds of broad curriculum residential schools.</p>
+    <p>If that describes you, the chart below, drawn from data collected in the Integrated Postsecondary Education Data System, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are fine choices, but easier than picking among hundreds of broad curriculum residential schools.)</p>
     <p>I'll start with three assertions:</p>
     <ol>
       <li><strong>High school students spend too much time worrying</strong> about whether they will be accepted and not enough time trying to get a sense of the places they might like to go. This is for you to get a sense of the layout of American higher ed generally.</li>
       <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
-      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. It's eaiser for a college to become "more selective" via better advertising than by improving the experience.</li>
+      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. It's eaiser for a college to become "more selective" via flashier advertising than by improving the student experience.</li>
     </ol>
     <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
     <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
     <ul>
       <li><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go. Unlike Acceptance Rate, Yield represents a real choice, not just a checkbox on the Common App. If a school offers a spot to 100 students, and only 10 choose to go there, that tells you something very different than if 40 choose to go: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body.</li>
       <li><strong>6 Year Graduation Rate</strong> is just what it sounds like: for any given incoming class, how many students graduated with a Bachelor's degree 6 years later? (The Bachelor's is often called a 4 year degree, but many students take a bit more time.) Graduation rate is the single most important metric, capturing how prepared and serious the students are, and how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how the campus looks in the fall -- just don't apply.</li>
-    <p>Admissions rate does not measure any real tradeoffs. When the Common App went online in the late 90s, most of the selective colleges saw their admissions rates fall <em>even though there were no new students and no reductions in incoming classes</em>, because "Why not?" became the reigning logic of applying to Duke or UChicago, without represent any real commitment by students.</p> 
-    <p>Yield, on the other hand, is a <em>choice</em> -- if a student decides to go to one school, they are also deciding not to go to any other school they got into. If yield goes up at one college, it has to go down elsewhere, making it a non-bullshit measurement.(Colleges obsess over yield internally, but don't mention it to applicants because the students control it, not their marketing department.)</p>
-    <p>The chart below lists the tk colleges (including those inside universities) that have:</p>
+    </ul>
+    <p>Admissions rate does not measure any real tradeoffs. When the Common App went online in the late 90s, most of the selective colleges saw their admissions rates fall <em>even though there were no new students and no reductions in incoming classes</em>, because "Why not?" became the reigning logic of applying to Duke or UChicago, without measuring deep commitment.</p> 
+    <p>Yield, on the other hand, is a <em>choice</em> -- if a student decides to go to one school, they are deciding not to go to any other school they got into, making it a non-bullshit measurement. (Colleges obsess over yield internally, but don't mention it to applicants because the students control it, not their marketing department.)</p>
+    <p>The chart below lists the tk colleges (including those inside universities) that:</p>
     <ol>
-      <li>10%+ Yield and 50%+ 6 year graduation rate</li>
+      <li>Have 10%+ Yield and 50%+ 6 year graduation rate</li>
       <li>Offers more Bachelor's degrees than Associates degrees</li>
       <li>Has a large group of students studying full-time, in person, and living on or near campus</li>
       <li>Has a broad curriculum (a lot of potential majors)</li>
@@ -167,10 +212,11 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     y: { label: null, domain: [50, 100] },
     marks: [
       Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "white"}),
+      Plot.rect(lowYieldBgRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#ececec"}),
       Plot.rect(edgeRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f9f9f9"}),
       Plot.dot(data, {
-        x: "yield_rate",
-        y: "grad_rate_6yr",
+        x: "yield_jittered",
+        y: "grad_jittered",
         r: d => match(d) ? 6 : 3,
         fill: d => match(d) ? hiColor(d) : baseColor(d),
         fillOpacity: d => match(d) ? 1 : 0.5,
@@ -292,7 +338,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     const yVal = ys.invert(evt.clientY - rect.top);
     let nearest = null, minDist = Infinity;
     for (const d of data) {
-      const dist = (d.yield_rate - xVal) ** 2 + (d.grad_rate_6yr - yVal) ** 2;
+      const dist = (d.yield_jittered - xVal) ** 2 + (d.grad_jittered - yVal) ** 2;
       if (dist < minDist) { minDist = dist; nearest = d; }
     }
     if (nearest && minDist < 30) {
@@ -303,8 +349,8 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       tipEl.style.left = offX + "px";
       tipEl.style.top  = offY + "px";
       tipEl.style.display = "block";
-      const dotX = xs.apply(nearest.yield_rate);
-      const dotY = ys.apply(nearest.grad_rate_6yr);
+      const dotX = xs.apply(nearest.yield_jittered);
+      const dotY = ys.apply(nearest.grad_jittered);
       const curX = evt.clientX - rect.left;
       const curY = evt.clientY - rect.top;
       const pixDist2 = (dotX - curX) ** 2 + (dotY - curY) ** 2;
@@ -340,8 +386,8 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     // Click near a dot
     let nearest = null, minDist = Infinity;
     for (const d of data) {
-      const dx = xs.apply(d.yield_rate) - px;
-      const dy = ys.apply(d.grad_rate_6yr) - py;
+      const dx = xs.apply(d.yield_jittered) - px;
+      const dy = ys.apply(d.grad_jittered) - py;
       const dist = dx * dx + dy * dy;
       if (dist < minDist) { minDist = dist; nearest = d; }
     }
