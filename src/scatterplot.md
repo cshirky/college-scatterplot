@@ -128,8 +128,16 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
 ```
 
 ```js
+const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
+```
+
+```js
 {
+  const query = searchQuery.trim().toLowerCase();
+  const match = d => query && d.INSTNM.toLowerCase().includes(query);
+
   const baseColor = d => d.sector_label === "Public" ? "#FF8C00" : "steelblue";
+  const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
 
   const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
 
@@ -154,9 +162,9 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
-        r: 3,
-        fill: d => baseColor(d),
-        fillOpacity: 0.5,
+        r: d => match(d) ? 6 : 3,
+        fill: d => match(d) ? hiColor(d) : baseColor(d),
+        fillOpacity: d => match(d) ? 1 : 0.5,
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5)}),
