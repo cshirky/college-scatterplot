@@ -8,16 +8,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
+<link rel="preload" as="style" href="./_observablehq/stdlib/inputs.ea9fd553.css">
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
-<link rel="modulepreload" href="./_observablehq/client.f9bb7a21.js">
+<link rel="stylesheet" type="text/css" href="./_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="modulepreload" href="./_observablehq/client.4202e776.js">
 <link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.73a8ec5a.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.0434fb94.js">
 <link rel="modulepreload" href="./_npm/d3@7.9.0/66d82917.js">
 <link rel="modulepreload" href="./_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="./_observablehq/stdlib/inputs.4ef1d259.js">
 <link rel="modulepreload" href="./_npm/@observablehq/plot@0.6.17/a96a6bbb.js">
 <link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="./_npm/isoformat@0.2.1/18cbf477.js">
 <link rel="modulepreload" href="./_npm/d3-array@3.2.4/e93ca09f.js">
 <link rel="modulepreload" href="./_npm/d3-axis@3.0.0/0f2de24d.js">
 <link rel="modulepreload" href="./_npm/d3-brush@3.0.0/65eb105b.js">
@@ -47,7 +51,6 @@
 <link rel="modulepreload" href="./_npm/d3-timer@3.0.1/b58a267d.js">
 <link rel="modulepreload" href="./_npm/d3-transition@3.0.1/004da2ac.js">
 <link rel="modulepreload" href="./_npm/d3-zoom@3.0.0/b5786b3f.js">
-<link rel="modulepreload" href="./_npm/isoformat@0.2.1/18cbf477.js">
 <link rel="modulepreload" href="./_npm/interval-tree-1d@1.0.4/53fe8176.js">
 <link rel="modulepreload" href="./_npm/internmap@2.0.3/e08981d9.js">
 <link rel="modulepreload" href="./_npm/delaunator@5.1.0/d4ec0aa1.js">
@@ -55,11 +58,11 @@
 <link rel="modulepreload" href="./_npm/robust-predicates@3.0.3/42820bfa.js">
 <script type="module">
 
-import {define} from "./_observablehq/client.f9bb7a21.js";
+import {define} from "./_observablehq/client.4202e776.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1775957912833,"size":229171});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1775957912845,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1775966541881,"size":229171});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1775966541894,"size":122429});
 
 define({id: "baa01b37", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -196,9 +199,18 @@ html.fragment`<h2 style="font-size:1rem; font-weight:600; color:#444; margin:1.5
 ))
 }});
 
-define({id: "cd38bdcf", inputs: ["html","Plot","d3","xMin","xMax","grid","edgeRects","data","colCounts","cellCounts","rowCounts","collegeCard","yieldStep","gradStep","display"], body: (html,Plot,d3,xMin,xMax,grid,edgeRects,data,colCounts,cellCounts,rowCounts,collegeCard,yieldStep,gradStep,display) => {
+define({id: "144cb671", inputs: ["view","Inputs"], outputs: ["searchQuery"], body: (view,Inputs) => {
+const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
+return {searchQuery};
+}});
+
+define({id: "da2659dd", inputs: ["searchQuery","html","Plot","d3","xMin","xMax","grid","edgeRects","data","colCounts","cellCounts","rowCounts","collegeCard","yieldStep","gradStep","display"], body: (searchQuery,html,Plot,d3,xMin,xMax,grid,edgeRects,data,colCounts,cellCounts,rowCounts,collegeCard,yieldStep,gradStep,display) => {
 {
+  const query = searchQuery.trim().toLowerCase();
+  const match = d => query && d.INSTNM.toLowerCase().includes(query);
+
   const baseColor = d => d.sector_label === "Public" ? "#FF8C00" : "steelblue";
+  const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
 
   const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
 
@@ -223,9 +235,9 @@ define({id: "cd38bdcf", inputs: ["html","Plot","d3","xMin","xMax","grid","edgeRe
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
-        r: 3,
-        fill: d => baseColor(d),
-        fillOpacity: 0.5,
+        r: d => match(d) ? 6 : 3,
+        fill: d => match(d) ? hiColor(d) : baseColor(d),
+        fillOpacity: d => match(d) ? 1 : 0.5,
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5)}),
@@ -474,10 +486,11 @@ define({id: "cd38bdcf", inputs: ["html","Plot","d3","xMin","xMax","grid","edgeRe
 <div class="observablehq observablehq--block"><!--:91520bb6:--></div>
 <div class="observablehq observablehq--block"><!--:d9f13499:--></div>
 <div class="observablehq observablehq--block"><observablehq-loading></observablehq-loading><!--:b3ee3cb4:--></div>
-<div class="observablehq observablehq--block"><!--:cd38bdcf:--></div>
+<div class="observablehq observablehq--block"><!--:144cb671:--></div>
+<div class="observablehq observablehq--block"><!--:da2659dd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T01:38:39">Apr 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T04:02:35">Apr 12, 2026</a>.</div>
 </footer>
 </div>
 </body>
