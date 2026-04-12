@@ -1,7 +1,46 @@
-# Graduation Rate vs. Yield
-
 ```js
 import {collegeCard} from "./components/collegeCard.js";
+```
+
+```js
+{
+  const imgUrl = await FileAttachment("scatterplot_all_schools.png").url();
+  const details = html`<details open style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
+  <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
+    What (and who) this is for
+    <span class="toggle-hint" style="font-size:0.8rem; font-weight:400; color:#888;">click to close</span>
+  </summary>
+  <div style="margin-top:0.75rem; font-size:0.9rem; line-height:1.7; color:#333; max-width:720px;">
+    <p>This is an opinionated guide to U.S. colleges. It makes some assumptions about the kind of person you are, and what you are looking for.</p>
+    <p>In particular, this site assumes you are:</p>
+    <ul>
+      <li>An American high school student…</li>
+      <li>…with a B- grade average or better</li>
+      <li>…who wants a Bachelor's degree</li>
+      <li>…at a college that has lots of options for majors</li>
+      <li>…where you study full-time and live on campus.</li>
+    </ul>
+    <p>If that describes you, this site is designed to help you explore your options. It's organized around three ideas:</p>
+    <ol>
+      <li>High school students spend too much time worrying about whether they will be accepted and not enough time trying to get a sense of the places they might fit. This is for you to get a sense of the layout of American higher ed generally.</li>
+      <li>If you have a dream school, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
+      <li>A college's acceptance rate is a bullshit number. A college becomes "more selective" by convincing more students to apply. Acceptance rate is a measure of advertising, not real student interest.</li>
+    </ol>
+    <p>Colleges have every incentive to get you to focus on things like their mission statement (always some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. And to be fair, there are lots of reasons you might add a school to your list — size, locale, majors offered, and so on. But the two numbers that matter most are Yield, and 6 Year Graduation rate.</p>
+    <p><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go. Unlike Acceptance Rate, Yield represents a real choice, not just a checkbox on the Common App. If a school offers a spot to 100 students, and only 10 choose to go there, that tells you something very different than if 40 choose to go: School A is a safety, School B has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body. (Colleges don't like to talk about Yield, because the students control it, not their marketing department.)</p>
+    <p><strong>6 Year Graduation Rate</strong> is just what it sounds like: for any given incoming class, how many students graduated with a Bachelor's degree 6 years later? (The Bachelor's is often called a 4 year degree, but many students take a bit more time to finish.) Graduation rate is a blended measurement, capturing how prepared and serious the students are, and how well the college supports them. Graduation rate is the single most important metric — if many students drop out or transfer out before graduating, it does not matter how the campus looks in the fall.</p>
+    <p>This is a chart of 1,500 American colleges, with graduation rate as the vertical measure and yield the horizontal one:</p>
+    <img src="${imgUrl}" style="max-width:100%; margin:0.5rem 0 1rem; display:block;" alt="Scatterplot of all colleges by yield and graduation rate">
+    <p>You can see a couple of things from this graph: about half of these colleges have a yield of lower than 20%, which is to say that more than 4 out of 5 students offered a place there turned them down. About a third of colleges have a graduation rate of below 50%.</p>
+    <p>Below is an interactive version of this chart, limited to schools with a) yield of 20% or above and b) graduation rate of 50% or above with c) a broad student body and curriculum (not an arts or engineering school, not a school for people with a particular ethnicity or religious identity) where d) many students live on campus and study full time.</p>
+    <p>Click any dot to see a school card; use the buttons on the card to save schools to your list.</p>
+  </div>
+</details>`;
+  details.addEventListener("toggle", () => {
+    details.querySelector(".toggle-hint").textContent = details.open ? "click to close" : "click to expand";
+  });
+  display(details);
+}
 ```
 
 ```js
@@ -85,44 +124,42 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
 }));
 ```
 
-```js
-const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
+```html
+<h2 style="font-size:1rem; font-weight:600; color:#444; margin:1.5rem 0 0.5rem;">289 Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate</h2>
 ```
 
 ```js
 {
-  const query = searchQuery.trim().toLowerCase();
-  const match = d => query && d.INSTNM.toLowerCase().includes(query);
-
   const baseColor = d => d.sector_label === "Public" ? "#FF8C00" : "steelblue";
-  const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
 
   const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
 
   const triSize = 14; // pixel size of corner triangle
 
   // cellCounts text is omitted from marks — drawn manually below for z-order control
+  const marginLeft = 65, marginRight = 45, marginTop = 24, marginBottom = 50;
+  const plotWidth = 800, plotHeight = 600;
+
   const plt = Plot.plot({
-    width: 800,
-    height: 600,
-    marginLeft: 50,
-    marginBottom: 50,
-    marginTop: 24,
-    marginRight: 30,
-    x: { label: "Yield rate (%)", ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5) },
-    y: { label: "6-year graduation rate (%)", domain: [50, 100] },
+    width: plotWidth,
+    height: plotHeight,
+    marginLeft,
+    marginBottom,
+    marginTop,
+    marginRight,
+    x: { label: null, ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5) },
+    y: { label: null, domain: [50, 100] },
     marks: [
       Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "white"}),
       Plot.rect(edgeRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f9f9f9"}),
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
-        r: d => match(d) ? 6 : 3,
-        fill: d => match(d) ? hiColor(d) : baseColor(d),
-        fillOpacity: d => match(d) ? 1 : 0.5,
+        r: 3,
+        fill: d => baseColor(d),
+        fillOpacity: 0.5,
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
-      Plot.text(rowCounts, {x: xMax, y: "y", text: "count", textAnchor: "start", dx: 6, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5)}),
       Plot.gridY({ticks: d3.range(50, 101, 5)}),
       Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
@@ -167,6 +204,43 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     labelGroup.appendChild(t);
   }
   svgEl?.appendChild(labelGroup);
+
+  // Y-axis label running up the left side
+  const plotCenterY = (marginTop + (plotHeight - marginBottom)) / 2;
+  const yAxisLabel = document.createElementNS(ns, "text");
+  yAxisLabel.setAttribute("transform", `translate(13, ${plotCenterY}) rotate(-90)`);
+  yAxisLabel.setAttribute("text-anchor", "middle");
+  yAxisLabel.setAttribute("font-size", "11");
+  yAxisLabel.setAttribute("font-family", "sans-serif");
+  yAxisLabel.setAttribute("fill", "#555");
+  yAxisLabel.textContent = "6-year graduation rate (%)";
+  svgEl?.appendChild(yAxisLabel);
+
+  // X-axis label centered along the bottom
+  const plotCenterX = (marginLeft + (plotWidth - marginRight)) / 2;
+  const xAxisLabel = document.createElementNS(ns, "text");
+  xAxisLabel.setAttribute("x", plotCenterX);
+  xAxisLabel.setAttribute("y", plotHeight - 8);
+  xAxisLabel.setAttribute("text-anchor", "middle");
+  xAxisLabel.setAttribute("font-size", "11");
+  xAxisLabel.setAttribute("font-family", "sans-serif");
+  xAxisLabel.setAttribute("fill", "#555");
+  xAxisLabel.textContent = "Yield (% of admitted students who chose to attend)";
+  svgEl?.appendChild(xAxisLabel);
+
+  // Row counts to the right of the plot
+  for (const row of rowCounts) {
+    const t = document.createElementNS(ns, "text");
+    t.setAttribute("x", xRange[1] + 8);
+    t.setAttribute("y", ys.apply(row.y));
+    t.setAttribute("text-anchor", "start");
+    t.setAttribute("dominant-baseline", "middle");
+    t.setAttribute("font-size", "9");
+    t.setAttribute("font-family", "sans-serif");
+    t.setAttribute("fill", "#888");
+    t.textContent = String(row.count);
+    svgEl?.appendChild(t);
+  }
 
   // Manual crosshair lines — only shown when cursor is directly over a dot
   const hLine = document.createElementNS(ns, "line");
