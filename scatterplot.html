@@ -61,9 +61,9 @@
 import {define} from "./_observablehq/client.4202e776.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776047215459,"size":229171});
-registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776047215469,"size":330553});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776047215473,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776050579637,"size":229171});
+registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776050579648,"size":330553});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776050579651,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -77,40 +77,15 @@ const low_yield_schools = FileAttachment("./data/low_yield_schools.csv").csv({ty
 return {good_schools,low_yield_schools};
 }});
 
-define({id: "aff61270", inputs: ["view","html","Event"], outputs: ["toggleState"], body: (view,html,Event) => {
-const toggleState = view((() => {
-  let vals = [true, true];
-  const labels = ["10–19% yield schools", "20–25% yield schools"];
-  const btnStyle = "padding:0.35rem 0.9rem; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; font-size:0.84rem; color:#374151;";
-  const buttons = labels.map((label, i) => {
-    const btn = html`<button style="${btnStyle}">`;
-    const refresh = () => {
-      btn.textContent = (vals[i] ? "Exclude" : "Include") + " " + label;
-      btn.style.background = vals[i] ? "#f9fafb" : "#e5e7eb";
-    };
-    btn.onclick = () => {
-      vals = vals.map((v, j) => j === i ? !v : v);
-      refresh();
-      container.dispatchEvent(new Event("input", {bubbles: true}));
-    };
-    refresh();
-    return btn;
-  });
-  const container = html`<div style="display:flex; gap:0.5rem; margin:0.5rem 0;">${buttons[0]}${buttons[1]}</div>`;
-  Object.defineProperty(container, "value", { get: () => vals });
-  return container;
-})());
-return {toggleState};
-}});
-
-define({id: "347bc2ee", inputs: ["good_schools","low_yield_schools","toggleState","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","edgeRects","lowYieldBgRects","cellCounts","colCounts","rowCounts"], body: (good_schools,low_yield_schools,toggleState,d3) => {
+define({id: "37238145", inputs: ["good_schools","low_yield_schools","yieldFloor","gradFloor","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","edgeRects","lowYieldBgRects","cellCounts","colCounts","rowCounts"], body: (good_schools,low_yield_schools,yieldFloor,gradFloor,d3) => {
 const data = [...good_schools, ...low_yield_schools]
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
                !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
   .filter(d => {
     const y = Math.round(+d.yield_rate);
-    if (!toggleState[0] && y < 20) return false;
-    if (!toggleState[1] && y >= 20 && y <= 25) return false;
+    const g = +d.grad_rate_6yr;
+    if (y < yieldFloor) return false;
+    if (g < gradFloor) return false;
     return true;
   })
   .map(d => {
@@ -121,7 +96,7 @@ const data = [...good_schools, ...low_yield_schools]
       ...d,
       yield_rate: yr,
       grad_rate_6yr: gr,
-      yield_jittered: yr + Math.sin(uid * 127.1) * 2,
+      yield_jittered: Math.max(yr + Math.sin(uid * 127.1) * 2, yieldFloor),
       grad_jittered:  gr + Math.cos(uid * 83.7)  * 1.5,
     };
   });
@@ -179,7 +154,7 @@ for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
   }
 }
 const edgeRects       = grid.filter(q => q.x1 === 20 || (q.y1 === 50 && q.x1 < 25));
-const lowYieldBgRects = grid.filter(q => q.x1 >= 10 && q.x1 < 20);
+const lowYieldBgRects = grid.filter(q => q.x1 < 20);
 const cellCounts = grid.map(q => ({
   ...q,
   count: data.filter(d =>
@@ -199,7 +174,7 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
 return {data,polyFit,coeffs,xMin,xMax,allTrendPoints,residuals,sd,trendPoints,bandPoints,yieldStep,gradStep,yieldStart,yieldEnd,grid,edgeRects,lowYieldBgRects,cellCounts,colCounts,rowCounts};
 }});
 
-define({id: "d1518e5d", inputs: ["FileAttachment","html","display"], body: async (FileAttachment,html,display) => {
+define({id: "c7f143db", inputs: ["FileAttachment","html","display"], body: async (FileAttachment,html,display) => {
 {
   const imgUrl = await FileAttachment("./scatterplot_all_schools.png").url();
   const details = html`<details open style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
@@ -216,30 +191,31 @@ define({id: "d1518e5d", inputs: ["FileAttachment","html","display"], body: async
       <li>…at a college that has lots of options for majors</li>
       <li>…where you study full-time and live on campus.</li>
     </ul>
-    <p>If that describes you, the chart below, drawn from data collected in the Integrated Postsecondary Education Data System, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are fine choices, but easier than picking among hundreds of broad curriculum residential schools.)</p>
+    <p>If that describes you, the chart below, drawn from data collected in the <a href="https://nces.ed.gov/ipeds">Integrated Postsecondary Education Data System</a>, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are fine choices, but easier than picking among hundreds of broad curriculum residential schools.)</p>
     <p>I'll start with three assertions:</p>
     <ol>
-      <li><strong>High school students spend too much time worrying</strong> about whether they will be accepted and not enough time trying to get a sense of the places they might like to go. This is for you to get a sense of the layout of American higher ed generally.</li>
+      <li><strong>High school students worry too much</strong> about whether they will be accepted, while spending too little time trying to get a sense of the places they might like to go. This page is for you to get a sense of the layout of American higher ed generally.</li>
       <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
-      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. It's eaiser for a college to become "more selective" via flashier advertising than by improving the student experience.</li>
+      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges saw their admissions rates fall even though there were <em>no new students and no reductions in incoming classes</em>. For many students, applying to Duke or UChicago became no more meaningful than buying a lottery ticket. It's easier for a college to become "more selective" by buying flashier advertising than by improving the student experience.</li>
     </ol>
-    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
+    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
     <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
     <ul>
-      <li><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go. Unlike Acceptance Rate, Yield represents a real choice, not just a checkbox on the Common App. If a school offers a spot to 100 students, and only 10 choose to go there, that tells you something very different than if 40 choose to go: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body.</li>
-      <li><strong>6 Year Graduation Rate</strong> is just what it sounds like: for any given incoming class, how many students graduated with a Bachelor's degree 6 years later? (The Bachelor's is often called a 4 year degree, but many students take a bit more time.) Graduation rate is the single most important metric, capturing how prepared and serious the students are, and how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how the campus looks in the fall -- just don't apply.</li>
+      <li><p><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go.</p> 
+      <p>Yield measures a <em>choice</em> -- if a student says Yes to one school, they are saying No to every other school they got into. Colleges obsess over yield internally, but don't mention it to applicants because the students control it, not their marketing department. If a school offers a spot to 100 students, and only 10 go, that tells you something very different than if 40 go: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. So, higher Yield is a good proxy for an engaged and committed student body.</p></li>
+      <li><p><strong>6 Year Graduation Rate</strong> is just what it sounds like: how many students graduated by 6 years after their arrival?</p> 
+        <p>Graduation rate is the single most important metric, capturing how prepared and serious the students are, and how well the college supports them. (The Bachelor's is often called a "4 year degree", but many students take more time, hence the 6 year window.) If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
     </ul>
-    <p>Admissions rate does not measure any real tradeoffs. When the Common App went online in the late 90s, most of the selective colleges saw their admissions rates fall <em>even though there were no new students and no reductions in incoming classes</em>, because "Why not?" became the reigning logic of applying to Duke or UChicago, without measuring deep commitment.</p> 
-    <p>Yield, on the other hand, is a <em>choice</em> -- if a student decides to go to one school, they are deciding not to go to any other school they got into, making it a non-bullshit measurement. (Colleges obsess over yield internally, but don't mention it to applicants because the students control it, not their marketing department.)</p>
-    <p>The chart below lists the tk colleges (including those inside universities) that:</p>
+    <p>The chart below lists the tk colleges (including those inside universities) that:</p> 
     <ol>
-      <li>Have 10%+ Yield and 50%+ 6 year graduation rate</li>
+      <li>Have 10%+ Yield and 50%+ 6 year graduation rate (You can adjust this.)</li> 
       <li>Offers more Bachelor's degrees than Associates degrees</li>
       <li>Has a large group of students studying full-time, in person, and living on or near campus</li>
       <li>Has a broad curriculum (a lot of potential majors)</li>
       <ul>
         <li>Which is just to say that this chart excludes schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries</li>
       </ul>
+      <li>Is non-profit, whether public or private. (For-profit colleges are awful, none are listed here.)</li>
     </ol>
     <p>Click any dot to see a school card. Click the triangle in any given Yield/Grad Rate square to see all the school cardss in that range.</p>
   </div>
@@ -262,7 +238,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
 return {searchQuery};
 }});
 
-define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax","grid","lowYieldBgRects","edgeRects","data","colCounts","cellCounts","rowCounts","collegeCard","yieldStep","gradStep","display"], body: (searchQuery,html,Plot,d3,xMin,xMax,grid,lowYieldBgRects,edgeRects,data,colCounts,cellCounts,rowCounts,collegeCard,yieldStep,gradStep,display) => {
+define({id: "56a541c7", inputs: ["searchQuery","html","Plot","yieldFloor","xMax","d3","grid","lowYieldBgRects","edgeRects","data","colCounts","cellCounts","rowCounts","collegeCard","yieldStep","gradStep","display"], body: (searchQuery,html,Plot,yieldFloor,xMax,d3,grid,lowYieldBgRects,edgeRects,data,colCounts,cellCounts,rowCounts,collegeCard,yieldStep,gradStep,display) => {
 {
   const query = searchQuery.trim().toLowerCase();
   const match = d => query && d.INSTNM.toLowerCase().includes(query);
@@ -272,8 +248,7 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
 
   const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
 
-  const triSize = 14;
-  const marginLeft = 65, marginRight = 45, marginTop = 24, marginBottom = 50;
+  const marginLeft = 65, marginRight = 45, marginTop = 36, marginBottom = 50;
   const plotWidth = 800, plotHeight = 600;
 
   const plt = Plot.plot({
@@ -283,11 +258,11 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
     marginBottom,
     marginTop,
     marginRight,
-    x: { label: null, ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5) },
+    x: { label: null, domain: [yieldFloor, xMax + 2], ticks: d3.range(yieldFloor, xMax + 5, 5) },
     y: { label: null, domain: [50, 100] },
     marks: [
       Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "white"}),
-      Plot.rect(lowYieldBgRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#ececec"}),
+      Plot.rect(lowYieldBgRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f0f0f0"}),
       Plot.rect(edgeRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f9f9f9"}),
       Plot.dot(data, {
         x: "yield_jittered",
@@ -297,7 +272,7 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
         fillOpacity: d => match(d) ? 1 : 0.5,
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
-      Plot.gridX({ticks: d3.range(Math.floor(xMin / 5) * 5, xMax + 5, 5)}),
+      Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
       Plot.gridY({ticks: d3.range(50, 101, 5)}),
       Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
       Plot.ruleY([85], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
@@ -311,26 +286,11 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
   const yRange = ys.range;
   const ns = "http://www.w3.org/2000/svg";
 
-  // Cell count triangles (inserted before dots so dots render on top)
-  const triGroup = document.createElementNS(ns, "g");
-  triGroup.setAttribute("fill", "#e5e7eb");
-  triGroup.setAttribute("pointer-events", "none");
-  for (const cell of cellCounts) {
-    const bx = xs.apply(cell.x1);
-    const by = ys.apply(cell.y1);
-    const poly = document.createElementNS(ns, "polygon");
-    poly.setAttribute("points", `${bx},${by} ${bx + triSize},${by} ${bx},${by - triSize}`);
-    triGroup.appendChild(poly);
-  }
-  const dotG = svgEl?.querySelector("circle")?.closest("g");
-  if (dotG?.parentElement) dotG.parentElement.insertBefore(triGroup, dotG);
-  else svgEl?.appendChild(triGroup);
-
   // Cell count labels (appended after dots)
   const labelGroup = document.createElementNS(ns, "g");
   labelGroup.setAttribute("font-size", "9");
   labelGroup.setAttribute("font-family", "sans-serif");
-  labelGroup.setAttribute("fill", "#aaa");
+  labelGroup.setAttribute("fill", "#777");
   labelGroup.setAttribute("pointer-events", "none");
   for (const cell of cellCounts) {
     const t = document.createElementNS(ns, "text");
@@ -365,6 +325,17 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
   xAxisLabel.textContent = "Yield (% of admitted students who chose to attend)";
   svgEl?.appendChild(xAxisLabel);
 
+  // "Number of schools in each column" label across the top
+  const colCountLabel = document.createElementNS(ns, "text");
+  colCountLabel.setAttribute("x", plotCenterX);
+  colCountLabel.setAttribute("y", 11);
+  colCountLabel.setAttribute("text-anchor", "middle");
+  colCountLabel.setAttribute("font-size", "9");
+  colCountLabel.setAttribute("font-family", "sans-serif");
+  colCountLabel.setAttribute("fill", "#888");
+  colCountLabel.textContent = "Number of schools in each column";
+  svgEl?.appendChild(colCountLabel);
+
   // Row counts to the right of the plot
   for (const row of rowCounts) {
     const t = document.createElementNS(ns, "text");
@@ -378,6 +349,16 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
     t.textContent = String(row.count);
     svgEl?.appendChild(t);
   }
+
+  // "Number of schools in each row" label down the right side
+  const rowCountLabel = document.createElementNS(ns, "text");
+  rowCountLabel.setAttribute("transform", `translate(${xRange[1] + 36}, ${plotCenterY}) rotate(90)`);
+  rowCountLabel.setAttribute("text-anchor", "middle");
+  rowCountLabel.setAttribute("font-size", "9");
+  rowCountLabel.setAttribute("font-family", "sans-serif");
+  rowCountLabel.setAttribute("fill", "#888");
+  rowCountLabel.textContent = "Number of schools in each row";
+  svgEl?.appendChild(rowCountLabel);
 
   // Crosshair lines
   const hLine = document.createElementNS(ns, "line");
@@ -496,32 +477,29 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
       return;
     }
 
-    // Click on a cell count triangle
-    for (const cell of cellCounts) {
-      const bx = xs.apply(cell.x1);
-      const by = ys.apply(cell.y1);
-      const dx = px - bx;
-      const dy = by - py;
-      if (dx >= 0 && dy >= 0 && dx + dy <= triSize) {
-        const matches = data.filter(d =>
-          d.yield_rate    >= cell.x1 && d.yield_rate    < cell.x2 &&
-          d.grad_rate_6yr >= cell.y1 && d.grad_rate_6yr < cell.y2
-        );
-        cardArea.innerHTML = "";
-        if (matches.length === 0) return;
-        const noun = matches.length === 1 ? "school" : "schools";
-        cardArea.append(html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
-          <strong>${matches.length} ${noun}</strong> with ${cell.x1}–${cell.x2}% yield and ${cell.y1}–${cell.y2}% graduation rate
-        </p>`);
-        for (const school of matches) cardArea.append(collegeCard(school));
-        return;
-      }
-    }
   });
 
   display(wrapper);
   display(cardArea);
 }
+}});
+
+define({id: "60168387", inputs: ["view","Inputs"], outputs: ["yieldFloor"], body: (view,Inputs) => {
+const yieldFloor = view(Inputs.select([25, 20, 15], {
+  label: "Yield filter",
+  format: d => `Exclude schools below ${d}% yield`,
+  value: 15,
+}));
+return {yieldFloor};
+}});
+
+define({id: "16f2351e", inputs: ["view","Inputs"], outputs: ["gradFloor"], body: (view,Inputs) => {
+const gradFloor = view(Inputs.select([65, 60, 55], {
+  label: "Grad rate filter",
+  format: d => `Exclude schools below ${d}% grad rate`,
+  value: 55,
+}));
+return {gradFloor};
 }});
 
 </script>
@@ -532,7 +510,7 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
 <nav>
 <div>Contents</div>
 <ol>
-<li class="observablehq-secondary-link"><a href="#residential-colleges-broad-student-body-and-curriculum-20-yield-50-grad-rate"> Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate</a></li>
+<li class="observablehq-secondary-link"><a href="#residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate"> Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate</a></li>
 </ol>
 </nav>
 </aside>
@@ -540,15 +518,16 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
 <h1 id="college-scatterplot" tabindex="-1"><a class="observablehq-header-anchor" href="#college-scatterplot">College Scatterplot</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
 <div class="observablehq observablehq--block"><!--:d9bf983e:--></div>
-<div class="observablehq observablehq--block"><!--:aff61270:--></div>
-<div class="observablehq observablehq--block"><!--:347bc2ee:--></div>
-<div class="observablehq observablehq--block"><!--:d1518e5d:--></div>
-<h2 id="residential-colleges-broad-student-body-and-curriculum-20-yield-50-grad-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-broad-student-body-and-curriculum-20-yield-50-grad-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate</a></h2>
+<div class="observablehq observablehq--block"><!--:37238145:--></div>
+<div class="observablehq observablehq--block"><!--:c7f143db:--></div>
+<h2 id="residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
-<div class="observablehq observablehq--block"><!--:a813ef09:--></div>
+<div class="observablehq observablehq--block"><!--:56a541c7:--></div>
+<div class="observablehq observablehq--block"><!--:60168387:--></div>
+<div class="observablehq observablehq--block"><!--:16f2351e:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T02:27:02">Apr 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T03:23:07">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>
