@@ -61,9 +61,9 @@
 import {define} from "./_observablehq/client.4202e776.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776038243123,"size":229171});
-registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776038243133,"size":330553});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776038243137,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776047215459,"size":229171});
+registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776047215469,"size":330553});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776047215473,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -77,8 +77,8 @@ const low_yield_schools = FileAttachment("./data/low_yield_schools.csv").csv({ty
 return {good_schools,low_yield_schools};
 }});
 
-define({id: "6fe8296f", inputs: ["view","html","Event"], outputs: ["showLow","showMid"], body: (view,html,Event) => {
-const [showLow, showMid] = view((() => {
+define({id: "aff61270", inputs: ["view","html","Event"], outputs: ["toggleState"], body: (view,html,Event) => {
+const toggleState = view((() => {
   let vals = [true, true];
   const labels = ["10–19% yield schools", "20–25% yield schools"];
   const btnStyle = "padding:0.35rem 0.9rem; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; font-size:0.84rem; color:#374151;";
@@ -100,17 +100,17 @@ const [showLow, showMid] = view((() => {
   Object.defineProperty(container, "value", { get: () => vals });
   return container;
 })());
-return {showLow,showMid};
+return {toggleState};
 }});
 
-define({id: "3f701c89", inputs: ["good_schools","low_yield_schools","showLow","showMid","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","edgeRects","lowYieldBgRects","cellCounts","colCounts","rowCounts"], body: (good_schools,low_yield_schools,showLow,showMid,d3) => {
+define({id: "347bc2ee", inputs: ["good_schools","low_yield_schools","toggleState","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","edgeRects","lowYieldBgRects","cellCounts","colCounts","rowCounts"], body: (good_schools,low_yield_schools,toggleState,d3) => {
 const data = [...good_schools, ...low_yield_schools]
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
                !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
   .filter(d => {
     const y = Math.round(+d.yield_rate);
-    if (!showLow && y < 20) return false;
-    if (!showMid && y >= 20 && y <= 25) return false;
+    if (!toggleState[0] && y < 20) return false;
+    if (!toggleState[1] && y >= 20 && y <= 25) return false;
     return true;
   })
   .map(d => {
@@ -540,15 +540,15 @@ define({id: "a813ef09", inputs: ["searchQuery","html","Plot","d3","xMin","xMax",
 <h1 id="college-scatterplot" tabindex="-1"><a class="observablehq-header-anchor" href="#college-scatterplot">College Scatterplot</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
 <div class="observablehq observablehq--block"><!--:d9bf983e:--></div>
-<div class="observablehq observablehq--block"><!--:6fe8296f:--></div>
-<div class="observablehq observablehq--block"><!--:3f701c89:--></div>
+<div class="observablehq observablehq--block"><!--:aff61270:--></div>
+<div class="observablehq observablehq--block"><!--:347bc2ee:--></div>
 <div class="observablehq observablehq--block"><!--:d1518e5d:--></div>
 <h2 id="residential-colleges-broad-student-body-and-curriculum-20-yield-50-grad-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-broad-student-body-and-curriculum-20-yield-50-grad-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges / Broad Student Body and Curriculum / 20%+ Yield, 50%+ Grad Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
 <div class="observablehq observablehq--block"><!--:a813ef09:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T23:57:34">Apr 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T02:27:02">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>
