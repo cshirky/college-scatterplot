@@ -29,7 +29,7 @@ const data = [...good_schools, ...low_yield_schools]
       yield_rate: yr,
       grad_rate_6yr: gr,
       yield_jittered: Math.max(yr + Math.sin(uid * 127.1) * 2, yieldFloor),
-      grad_jittered:  gr + Math.cos(uid * 83.7)  * 1.5,
+      grad_jittered:  Math.max(gr + Math.cos(uid * 83.7) * 1.5, Math.floor(gr / 5) * 5),
     };
   });
 
@@ -81,12 +81,18 @@ const yieldStart = Math.floor(xMin / yieldStep) * yieldStep;
 const yieldEnd   = Math.ceil(xMax  / yieldStep) * yieldStep;
 const grid = [];
 for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
-  for (let y1 = 50; y1 < 100; y1 += gradStep) {
+  for (let y1 = gradFloor; y1 < 100; y1 += gradStep) {
     grid.push({x1, x2: x1 + yieldStep, y1, y2: y1 + gradStep});
   }
 }
-const edgeRects       = grid.filter(q => q.x1 === 20 || (q.y1 === 50 && q.x1 < 25));
-const lowYieldBgRects = grid.filter(q => q.x1 < 20);
+// Shade levels: 0=darkest … 3=white. Yield columns and grad rows each carry a level;
+// cells use whichever is darker (lower index).
+const shadeColors = ["#e0e0e0", "#ebebeb", "#f4f4f4", "white"];
+function cellShade(x1, y1) {
+  const yLevel = x1 < 15 ? 0 : x1 < 20 ? 1 : x1 < 25 ? 2 : 3;
+  const gLevel = y1 < 55 ? 0 : y1 < 60 ? 1 : y1 < 65 ? 2 : 3;
+  return shadeColors[Math.min(yLevel, gLevel)];
+}
 const cellCounts = grid.map(q => ({
   ...q,
   count: data.filter(d =>
@@ -99,7 +105,7 @@ const colCounts = d3.range(yieldStart, yieldEnd, yieldStep).map(x1 => ({
   x: x1 + yieldStep / 2,
   count: data.filter(d => d.yield_rate >= x1 && d.yield_rate < x1 + yieldStep).length
 }));
-const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
+const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
   y: y1 + gradStep / 2,
   count: data.filter(d => d.grad_rate_6yr >= y1 && d.grad_rate_6yr < y1 + gradStep).length
 }));
@@ -126,8 +132,8 @@ const rowCounts = d3.range(50, 100, gradStep).map(y1 => ({
     <p>I'll start with three assertions:</p>
     <ol>
       <li><strong>High school students worry too much</strong> about whether they will be accepted, while spending too little time trying to get a sense of the places they might like to go. This page is for you to get a sense of the layout of American higher ed generally.</li>
-      <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that degree of adulation. Make a list and don't fixate on just one school.</li>
-      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges saw their admissions rates fall even though there were <em>no new students and no reductions in incoming classes</em>. For many students, applying to Duke or UChicago became no more meaningful than buying a lottery ticket. It's easier for a college to become "more selective" by buying flashier advertising than by improving the student experience.</li>
+      <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that much adulation. Make a list and don't fixate on just one school.</li>
+      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges saw their admissions rates fall even though there were <em>no new students and no reductions in incoming classes</em>. It's easier for a college to become "more selective" by buying flashier advertising than by improving the student experience.</li>
     </ol>
     <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
     <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
@@ -184,11 +190,9 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     marginTop,
     marginRight,
     x: { label: null, domain: [yieldFloor, xMax + 2], ticks: d3.range(yieldFloor, xMax + 5, 5) },
-    y: { label: null, domain: [50, 100] },
+    y: { label: null, domain: [gradFloor, 100] },
     marks: [
-      Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "white"}),
-      Plot.rect(lowYieldBgRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f0f0f0"}),
-      Plot.rect(edgeRects, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: "#f9f9f9"}),
+      Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: d => cellShade(d.x1, d.y1)}),
       Plot.dot(data, {
         x: "yield_jittered",
         y: "grad_jittered",
@@ -198,7 +202,7 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
-      Plot.gridY({ticks: d3.range(50, 101, 5)}),
+      Plot.gridY({ticks: d3.range(gradFloor, 101, 5)}),
       Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
       Plot.ruleY([85], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
     ],
@@ -410,18 +414,18 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
 ```
 
 ```js
-const yieldFloor = view(Inputs.select([25, 20, 15], {
+const yieldFloor = view(Inputs.select([10, 15, 20, 25], {
   label: "Yield filter",
-  format: d => `Exclude schools below ${d}% yield`,
-  value: 15,
+  format: d => `Exclude schools with < ${d}% yield`,
+  value: 10,
 }));
 ```
 
 ```js
-const gradFloor = view(Inputs.select([65, 60, 55], {
+const gradFloor = view(Inputs.select([50, 55, 60, 65], {
   label: "Grad rate filter",
-  format: d => `Exclude schools below ${d}% grad rate`,
-  value: 55,
+  format: d => `Exclude schools with < ${d}% grad rate`,
+  value: 50,
 }));
 ```
 
