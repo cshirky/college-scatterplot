@@ -10,7 +10,7 @@ const low_yield_schools = FileAttachment("data/low_yield_schools.csv").csv({type
 ```
 
 ```js
-const [showLow, showMid] = view((() => {
+const toggleState = view((() => {
   let vals = [true, true];
   const labels = ["10–19% yield schools", "20–25% yield schools"];
   const btnStyle = "padding:0.35rem 0.9rem; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; font-size:0.84rem; color:#374151;";
@@ -40,8 +40,8 @@ const data = [...good_schools, ...low_yield_schools]
                !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
   .filter(d => {
     const y = Math.round(+d.yield_rate);
-    if (!showLow && y < 20) return false;
-    if (!showMid && y >= 20 && y <= 25) return false;
+    if (!toggleState[0] && y < 20) return false;
+    if (!toggleState[1] && y >= 20 && y <= 25) return false;
     return true;
   })
   .map(d => {
