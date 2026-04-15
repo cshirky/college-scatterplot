@@ -20,18 +20,11 @@ const data = [...good_schools, ...low_yield_schools]
     if (g < gradFloor) return false;
     return true;
   })
-  .map(d => {
-    const yr = Math.round(+d.yield_rate);
-    const gr = +d.grad_rate_6yr;
-    const uid = +d.UNITID;
-    return {
-      ...d,
-      yield_rate: yr,
-      grad_rate_6yr: gr,
-      yield_jittered: Math.max(yr + Math.sin(uid * 127.1) * 2, yieldFloor),
-      grad_jittered:  Math.max(gr + Math.cos(uid * 83.7) * 1.5, Math.floor(gr / 5) * 5),
-    };
-  });
+  .map(d => ({
+    ...d,
+    yield_rate:    Math.round(+d.yield_rate),
+    grad_rate_6yr: +d.grad_rate_6yr,
+  }));
 
 function polyFit(dataArr, xKey, yKey, degree) {
   const xs = dataArr.map(d => d[xKey]);
@@ -133,9 +126,9 @@ const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
     <ol>
       <li><strong>High school students worry too much</strong> about whether they will be accepted, while spending too little time trying to get a sense of the places they might like to go. This page is for you to get a sense of the layout of American higher ed generally.</li>
       <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution is worth that much adulation. Make a list and don't fixate on just one school.</li>
-      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges saw their admissions rates fall even though there were <em>no new students and no reductions in incoming classes</em>. It's easier for a college to become "more selective" by buying flashier advertising than by improving the student experience.</li>
+      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges saw their admissions rates fall even though there were <em>no new students and no reductions in incoming classes</em> -- the change in rate came solely from students applying to more schools.</li>
     </ol>
-    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
+    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
     <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
     <ul>
       <li><p><strong>Yield</strong> is a measure of the percentage of students who were admitted and chose to go.</p> 
@@ -147,12 +140,10 @@ const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
     <ol>
       <li>Have 10%+ Yield and 50%+ 6 year graduation rate (You can adjust this.)</li> 
       <li>Offers more Bachelor's degrees than Associates degrees</li>
-      <li>Has a large group of students studying full-time, in person, and living on or near campus</li>
+      <li>Has students studying full-time, in person, and living on or near campus</li>
       <li>Has a broad curriculum (a lot of potential majors)</li>
-      <ul>
-        <li>Which is just to say that this chart excludes schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries</li>
-      </ul>
-      <li>Is non-profit, whether public or private. (For-profit colleges are awful, none are listed here.)</li>
+      <li>The chart excludes schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries</li>
+      <li>Is non-profit, whether public or private. (For-profit colleges are awful, none are listed here, because I would never.)</li>
     </ol>
     <p>Click any dot to see a school card. Click the triangle in any given Yield/Grad Rate square to see all the school cardss in that range.</p>
   </div>
@@ -170,14 +161,16 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
 ```
 
 ```js
+const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:800px;"></div>`;
+```
+
+```js
 {
   const query = searchQuery.trim().toLowerCase();
   const match = d => query && d.INSTNM.toLowerCase().includes(query);
 
-  const baseColor = d => d.sector_label === "Public" ? "#FF8C00" : "steelblue";
-  const hiColor   = d => d.sector_label === "Public" ? "#b35000" : "darkblue";
-
-  const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.5rem; max-width:800px;"></div>`;
+  const baseColor = d => d.sector_label === "Public" ? "#e53e3e" : "#3b82f6";
+  const hiColor   = d => d.sector_label === "Public" ? "#991b1b" : "#1e3a8a";
 
   const marginLeft = 65, marginRight = 45, marginTop = 36, marginBottom = 50;
   const plotWidth = 800, plotHeight = 600;
@@ -194,11 +187,12 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
     marks: [
       Plot.rect(grid, {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: d => cellShade(d.x1, d.y1)}),
       Plot.dot(data, {
-        x: "yield_jittered",
-        y: "grad_jittered",
-        r: d => match(d) ? 6 : 3,
+        x: "yield_rate",
+        y: "grad_rate_6yr",
+        r: d => match(d) ? 6 : 4,
         fill: d => match(d) ? hiColor(d) : baseColor(d),
-        fillOpacity: d => match(d) ? 1 : 0.5,
+        fillOpacity: d => match(d) ? 0.9 : 0.22,
+        stroke: "none",
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
@@ -289,143 +283,98 @@ const searchQuery = view(Inputs.text({placeholder: "Search for a school…", wid
   rowCountLabel.textContent = "Number of schools in each row";
   svgEl?.appendChild(rowCountLabel);
 
-  // Crosshair lines
-  const hLine = document.createElementNS(ns, "line");
-  hLine.setAttribute("stroke", "#555");
-  hLine.setAttribute("stroke-width", "0.5");
-  hLine.setAttribute("stroke-dasharray", "4,3");
-  hLine.setAttribute("x1", xRange[0]);
-  hLine.setAttribute("x2", xRange[1]);
-  hLine.style.display = "none";
-  hLine.style.pointerEvents = "none";
-
-  const vLine = document.createElementNS(ns, "line");
-  vLine.setAttribute("stroke", "#555");
-  vLine.setAttribute("stroke-width", "1");
-  vLine.setAttribute("stroke-dasharray", "4,3");
-  vLine.setAttribute("y1", yRange[0]);
-  vLine.setAttribute("y2", yRange[1]);
-  vLine.style.display = "none";
-  vLine.style.pointerEvents = "none";
-
-  svgEl?.appendChild(hLine);
-  svgEl?.appendChild(vLine);
-
-  const tipEl = html`<div style="position:absolute; display:none; background:white; border:1px solid #ddd; border-radius:6px; padding:0.4rem 0.65rem; font-size:0.8rem; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.12); max-width:240px; line-height:1.5;"></div>`;
+  const tipEl = html`<div style="position:absolute; display:none; background:white; border:1px solid #ddd; border-radius:6px; padding:0.4rem 0.65rem; font-size:0.8rem; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.12); max-width:260px; line-height:1.5;"></div>`;
   const wrapper = html`<div style="position:relative; display:inline-block;"></div>`;
   wrapper.append(plt);
   wrapper.append(tipEl);
 
+  function stackAt(d) {
+    // All schools at the exact same yield_rate × grad_rate_6yr position
+    return data.filter(e => e.yield_rate === d.yield_rate && e.grad_rate_6yr === d.grad_rate_6yr);
+  }
+
   plt.addEventListener("pointermove", evt => {
     if (!xs || !ys) return;
     const rect = plt.getBoundingClientRect();
-    const xVal = xs.invert(evt.clientX - rect.left);
-    const yVal = ys.invert(evt.clientY - rect.top);
+    const px = evt.clientX - rect.left, py = evt.clientY - rect.top;
     let nearest = null, minDist = Infinity;
     for (const d of data) {
-      const dist = (d.yield_jittered - xVal) ** 2 + (d.grad_jittered - yVal) ** 2;
-      if (dist < minDist) { minDist = dist; nearest = d; }
-    }
-    if (nearest && minDist < 30) {
-      const sector = nearest.sector_label === "Public" ? "Public" : "Private";
-      tipEl.innerHTML = `<strong>${nearest.INSTNM}</strong><br>${sector} school in ${nearest.CITY}, ${nearest.STABBR}<br><span style="color:#555">Grad rate: ${nearest.grad_rate_6yr}% &nbsp;·&nbsp; Yield: ${nearest.yield_rate}%</span>`;
-      const offX = evt.clientX - rect.left + 14;
-      const offY = evt.clientY - rect.top - 10;
-      tipEl.style.left = offX + "px";
-      tipEl.style.top  = offY + "px";
-      tipEl.style.display = "block";
-      const dotX = xs.apply(nearest.yield_jittered);
-      const dotY = ys.apply(nearest.grad_jittered);
-      const curX = evt.clientX - rect.left;
-      const curY = evt.clientY - rect.top;
-      const pixDist2 = (dotX - curX) ** 2 + (dotY - curY) ** 2;
-      if (pixDist2 < 36) {
-        hLine.setAttribute("y1", dotY);
-        hLine.setAttribute("y2", dotY);
-        hLine.style.display = "";
-        vLine.setAttribute("x1", dotX);
-        vLine.setAttribute("x2", dotX);
-        vLine.style.display = "";
-      } else {
-        hLine.style.display = "none";
-        vLine.style.display = "none";
-      }
-    } else {
-      tipEl.style.display = "none";
-      hLine.style.display = "none";
-      vLine.style.display = "none";
-    }
-  });
-
-  plt.addEventListener("pointerleave", () => {
-    tipEl.style.display = "none";
-    hLine.style.display = "none";
-    vLine.style.display = "none";
-  });
-
-  plt.addEventListener("click", evt => {
-    const r = plt.getBoundingClientRect();
-    const px = evt.clientX - r.left;
-    const py = evt.clientY - r.top;
-
-    // Click near a dot
-    let nearest = null, minDist = Infinity;
-    for (const d of data) {
-      const dx = xs.apply(d.yield_jittered) - px;
-      const dy = ys.apply(d.grad_jittered) - py;
+      const dx = xs.apply(d.yield_rate) - px, dy = ys.apply(d.grad_rate_6yr) - py;
       const dist = dx * dx + dy * dy;
       if (dist < minDist) { minDist = dist; nearest = d; }
     }
-    if (nearest && minDist < 36) {
-      cardArea.innerHTML = "";
-      cardArea.append(collegeCard(nearest));
-
-      const cx1 = Math.floor(nearest.yield_rate / yieldStep) * yieldStep;
-      const cy1 = Math.floor(nearest.grad_rate_6yr / gradStep) * gradStep;
-      const cellmates = data.filter(d =>
-        d !== nearest &&
-        d.yield_rate    >= cx1 && d.yield_rate    < cx1 + yieldStep &&
-        d.grad_rate_6yr >= cy1 && d.grad_rate_6yr < cy1 + gradStep
-      );
-      if (cellmates.length > 0) {
-        const total = cellmates.length + 1;
-        const seeAll = html`<p style="grid-column:1/-1; margin:0.25rem 0 0; font-size:0.82rem; color:#666;">
-          <a href="#" style="color:#2563eb;">See all ${total} schools with ${cx1}–${cx1+yieldStep}% yield and ${cy1}–${cy1+gradStep}% grad rate →</a>
-        </p>`;
-        seeAll.querySelector("a").onclick = e => {
-          e.preventDefault();
-          cardArea.innerHTML = "";
-          const noun = total === 1 ? "school" : "schools";
-          cardArea.append(html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
-            <strong>${total} ${noun}</strong> with ${cx1}–${cx1+yieldStep}% yield and ${cy1}–${cy1+gradStep}% graduation rate
-          </p>`);
-          for (const school of [nearest, ...cellmates]) cardArea.append(collegeCard(school));
-        };
-        cardArea.append(seeAll);
+    if (nearest && minDist < 100) {
+      const stack = stackAt(nearest);
+      const sector = nearest.sector_label === "Public" ? "Public" : "Private";
+      if (stack.length === 1) {
+        tipEl.innerHTML = `<strong>${nearest.INSTNM}</strong><br>${sector} · ${nearest.CITY}, ${nearest.STABBR}<br><span style="color:#555">Grad: ${nearest.grad_rate_6yr}% &nbsp;·&nbsp; Yield: ${nearest.yield_rate}%</span>`;
+      } else {
+        tipEl.innerHTML = `<strong>${stack.length} schools</strong> · ${nearest.yield_rate}% yield, ${nearest.grad_rate_6yr}% grad<br><span style="color:#555">${stack.map(s => s.INSTNM).join("<br>")}</span>`;
       }
-      return;
+      const offX = px + 14, offY = py - 10;
+      tipEl.style.left = offX + "px";
+      tipEl.style.top  = offY + "px";
+      tipEl.style.display = "block";
+    } else {
+      tipEl.style.display = "none";
     }
+  });
 
+  plt.addEventListener("pointerleave", () => { tipEl.style.display = "none"; });
+
+  plt.addEventListener("click", evt => {
+    const r = plt.getBoundingClientRect();
+    const px = evt.clientX - r.left, py = evt.clientY - r.top;
+    let nearest = null, minDist = Infinity;
+    for (const d of data) {
+      const dx = xs.apply(d.yield_rate) - px, dy = ys.apply(d.grad_rate_6yr) - py;
+      const dist = dx * dx + dy * dy;
+      if (dist < minDist) { minDist = dist; nearest = d; }
+    }
+    if (nearest && minDist < 100) {
+      const stack = stackAt(nearest);
+      cardArea.innerHTML = "";
+      if (stack.length > 1) {
+        cardArea.append(html`<p style="grid-column:1/-1; margin:0 0 0.5rem; font-size:0.9rem; color:#555;">
+          <strong>${stack.length} schools</strong> at ${nearest.yield_rate}% yield · ${nearest.grad_rate_6yr}% grad rate
+        </p>`);
+      }
+      for (const school of stack) cardArea.append(collegeCard(school));
+    }
   });
 
   display(wrapper);
-  display(cardArea);
 }
 ```
 
 ```js
-const yieldFloor = view(Inputs.select([10, 15, 20, 25], {
-  label: "Yield filter",
-  format: d => `Exclude schools with < ${d}% yield`,
-  value: 10,
-}));
+const filters = view(Inputs.form(
+  {
+    yieldFloor: Inputs.select([10, 15, 20, 25], {
+      label: null,
+      format: d => `Exclude schools with < ${d}% yield`,
+      value: 10,
+    }),
+    gradFloor: Inputs.select([50, 55, 60, 65], {
+      label: null,
+      format: d => `Exclude schools with < ${d}% grad rate`,
+      value: 50,
+    }),
+  },
+  {
+    template: inputs => {
+      const div = document.createElement("div");
+      div.style.cssText = "display:flex; gap:1rem; margin-top:0.5rem;";
+      div.append(inputs.yieldFloor, inputs.gradFloor);
+      return div;
+    }
+  }
+));
+const yieldFloor = filters.yieldFloor;
+const gradFloor  = filters.gradFloor;
 ```
 
 ```js
-const gradFloor = view(Inputs.select([50, 55, 60, 65], {
-  label: "Grad rate filter",
-  format: d => `Exclude schools with < ${d}% grad rate`,
-  value: 50,
-}));
+display(cardArea);
 ```
 
