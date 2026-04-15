@@ -61,9 +61,9 @@
 import {define} from "./_observablehq/client.4202e776.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776215017956,"size":229171});
-registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776215017966,"size":330553});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776215017970,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776215981215,"size":229171});
+registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776215981226,"size":330553});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776215981230,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -423,7 +423,7 @@ define({id: "a4e6a687", inputs: ["searchQuery","Plot","yieldFloor","xMax","d3","
 }
 }});
 
-define({id: "099c6e45", inputs: ["view","Inputs"], outputs: ["filters","yieldFloor","gradFloor"], body: (view,Inputs) => {
+define({id: "7f6ebc12", inputs: ["view","Inputs"], outputs: ["filters"], body: (view,Inputs) => {
 const filters = view(Inputs.form(
   {
     yieldFloor: Inputs.select([10, 15, 20, 25], {
@@ -446,9 +446,13 @@ const filters = view(Inputs.form(
     }
   }
 ));
+return {filters};
+}});
+
+define({id: "9cf9cb31", inputs: ["filters"], outputs: ["yieldFloor","gradFloor"], body: (filters) => {
 const yieldFloor = filters.yieldFloor;
 const gradFloor  = filters.gradFloor;
-return {filters,yieldFloor,gradFloor};
+return {yieldFloor,gradFloor};
 }});
 
 define({id: "9cab76db", inputs: ["display","cardArea"], body: (display,cardArea) => {
@@ -477,11 +481,12 @@ display(cardArea);
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
 <div class="observablehq observablehq--block"><!--:27fbd851:--></div>
 <div class="observablehq observablehq--block"><!--:a4e6a687:--></div>
-<div class="observablehq observablehq--block"><!--:099c6e45:--></div>
+<div class="observablehq observablehq--block"><!--:7f6ebc12:--></div>
+<div class="observablehq observablehq--block"><!--:9cf9cb31:--></div>
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-15T01:03:50">Apr 15, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-15T01:19:52">Apr 15, 2026</a>.</div>
 </footer>
 </div>
 </body>
