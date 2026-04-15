@@ -370,6 +370,9 @@ const filters = view(Inputs.form(
     }
   }
 ));
+```
+
+```js
 const yieldFloor = filters.yieldFloor;
 const gradFloor  = filters.gradFloor;
 ```
