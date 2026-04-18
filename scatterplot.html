@@ -12,7 +12,7 @@
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
 <link rel="stylesheet" type="text/css" href="./_observablehq/stdlib/inputs.ea9fd553.css">
-<link rel="modulepreload" href="./_observablehq/client.4202e776.js">
+<link rel="modulepreload" href="./_observablehq/client.7778922b.js">
 <link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.73a8ec5a.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.0434fb94.js">
@@ -58,12 +58,11 @@
 <link rel="modulepreload" href="./_npm/robust-predicates@3.0.3/42820bfa.js">
 <script type="module">
 
-import {define} from "./_observablehq/client.4202e776.js";
+import {define} from "./_observablehq/client.7778922b.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.2ade6890.csv","lastModified":1776215981215,"size":229171});
-registerFile("./data/low_yield_schools.csv", {"name":"./data/low_yield_schools.csv","mimeType":"text/csv","path":"./_file/data/low_yield_schools.40db93c1.csv","lastModified":1776215981226,"size":330553});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776215981230,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776493200834,"size":565993});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776493200847,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -71,14 +70,17 @@ const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js
 return {collegeCard};
 }});
 
-define({id: "d9bf983e", inputs: ["FileAttachment"], outputs: ["good_schools","low_yield_schools"], body: (FileAttachment) => {
-const good_schools      = FileAttachment("./data/good_schools.csv").csv({typed: true});
-const low_yield_schools = FileAttachment("./data/low_yield_schools.csv").csv({typed: true});
-return {good_schools,low_yield_schools};
+define({id: "91520bb6", inputs: ["FileAttachment"], outputs: ["good_schools"], body: (FileAttachment) => {
+const good_schools = FileAttachment("./data/good_schools.csv").csv({typed: true});
+return {good_schools};
 }});
 
-define({id: "10fbf94a", inputs: ["good_schools","low_yield_schools","yieldFloor","gradFloor","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","cellCounts","colCounts","rowCounts"], body: (good_schools,low_yield_schools,yieldFloor,gradFloor,d3) => {
-const data = [...good_schools, ...low_yield_schools]
+define({id: "6f4cae03", inputs: ["good_schools","selectedState","yieldFloor","gradFloor","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","cellCounts","colCounts","rowCounts"], body: (good_schools,selectedState,yieldFloor,gradFloor,d3) => {
+const data = good_schools
+  .filter(d => {
+    if (d.instate_only === "true" && d.primary_recruit_state !== selectedState) return false;
+    return true;
+  })
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
                !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
   .filter(d => {
@@ -455,6 +457,27 @@ const gradFloor  = filters.gradFloor;
 return {yieldFloor,gradFloor};
 }});
 
+define({id: "de8854ec", inputs: ["good_schools"], outputs: ["stateOptions"], body: (good_schools) => {
+const stateOptions = [...new Set(
+  good_schools
+    .filter(d => d.instate_only === "true")
+    .map(d => d.primary_recruit_state)
+)].filter(Boolean).sort();
+return {stateOptions};
+}});
+
+define({id: "47f6d7b2", inputs: ["view","Inputs","stateOptions"], outputs: ["selectedState"], body: (view,Inputs,stateOptions) => {
+const selectedState = view(Inputs.select(
+  [null, ...stateOptions],
+  {
+    label: "Add regionally recruiting schools from state:",
+    format: d => d ?? "None",
+    value: null,
+  }
+));
+return {selectedState};
+}});
+
 define({id: "9cab76db", inputs: ["display","cardArea"], body: (display,cardArea) => {
 display(cardArea);
 }});
@@ -474,8 +497,8 @@ display(cardArea);
 <main id="observablehq-main" class="observablehq">
 <h1 id="college-scatterplot" tabindex="-1"><a class="observablehq-header-anchor" href="#college-scatterplot">College Scatterplot</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
-<div class="observablehq observablehq--block"><!--:d9bf983e:--></div>
-<div class="observablehq observablehq--block"><!--:10fbf94a:--></div>
+<div class="observablehq observablehq--block"><!--:91520bb6:--></div>
+<div class="observablehq observablehq--block"><!--:6f4cae03:--></div>
 <div class="observablehq observablehq--block"><!--:3066ce7e:--></div>
 <h2 id="residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
@@ -483,10 +506,12 @@ display(cardArea);
 <div class="observablehq observablehq--block"><!--:a4e6a687:--></div>
 <div class="observablehq observablehq--block"><!--:7f6ebc12:--></div>
 <div class="observablehq observablehq--block"><!--:9cf9cb31:--></div>
+<div class="observablehq observablehq--block"><!--:de8854ec:--></div>
+<div class="observablehq observablehq--block"><!--:47f6d7b2:--></div>
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-15T01:19:52">Apr 15, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-18T06:20:08">Apr 18, 2026</a>.</div>
 </footer>
 </div>
 </body>
