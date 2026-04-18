@@ -5,12 +5,15 @@ import { collegeCard } from "./components/collegeCard.js";
 ```
 
 ```js
-const good_schools      = FileAttachment("data/good_schools.csv").csv({typed: true});
-const low_yield_schools = FileAttachment("data/low_yield_schools.csv").csv({typed: true});
+const good_schools = FileAttachment("data/good_schools.csv").csv({typed: true});
 ```
 
 ```js
-const data = [...good_schools, ...low_yield_schools]
+const data = good_schools
+  .filter(d => {
+    if (d.instate_only === "true" && d.primary_recruit_state !== selectedState) return false;
+    return true;
+  })
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
                !isNaN(+d.grad_rate_6yr) && !isNaN(+d.yield_rate))
   .filter(d => {
@@ -375,6 +378,25 @@ const filters = view(Inputs.form(
 ```js
 const yieldFloor = filters.yieldFloor;
 const gradFloor  = filters.gradFloor;
+```
+
+```js
+const stateOptions = [...new Set(
+  good_schools
+    .filter(d => d.instate_only === "true")
+    .map(d => d.primary_recruit_state)
+)].filter(Boolean).sort();
+```
+
+```js
+const selectedState = view(Inputs.select(
+  [null, ...stateOptions],
+  {
+    label: "Add regionally recruiting schools from state:",
+    format: d => d ?? "None",
+    value: null,
+  }
+));
 ```
 
 ```js
