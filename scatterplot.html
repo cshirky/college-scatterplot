@@ -61,8 +61,8 @@
 import {define} from "./_observablehq/client.7778922b.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776493200834,"size":565993});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776493200847,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776552150153,"size":565993});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776552150168,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -75,10 +75,20 @@ const good_schools = FileAttachment("./data/good_schools.csv").csv({typed: true}
 return {good_schools};
 }});
 
-define({id: "6f4cae03", inputs: ["good_schools","selectedState","yieldFloor","gradFloor","d3"], outputs: ["data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","cellCounts","colCounts","rowCounts"], body: (good_schools,selectedState,yieldFloor,gradFloor,d3) => {
+define({id: "cce87121", inputs: ["localeFilter","good_schools","selectedState","sizeFilter","yieldFloor","gradFloor","d3"], outputs: ["localeGroups","data","polyFit","coeffs","xMin","xMax","allTrendPoints","residuals","sd","trendPoints","bandPoints","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","cellCounts","colCounts","rowCounts"], body: (localeFilter,good_schools,selectedState,sizeFilter,yieldFloor,gradFloor,d3) => {
+const localeGroups = new Set([
+  ...(localeFilter.includes("Cities") ? ["City"] : []),
+  ...(localeFilter.includes("Towns & Suburbs") ? ["Town", "Suburb"] : []),
+  ...(localeFilter.includes("Rural") ? ["Rural"] : []),
+]);
+
 const data = good_schools
   .filter(d => {
     if (d.instate_only === "true" && d.primary_recruit_state !== selectedState) return false;
+    if (!localeGroups.has(d.locale_group)) return false;
+    const ug = d.enrollment_ug;
+    const sizeLabel = ug < 1000 ? "Tiny" : ug < 2500 ? "Small" : ug < 10000 ? "Medium" : ug < 25000 ? "Large" : "Very Large";
+    if (!sizeFilter.includes(sizeLabel)) return false;
     return true;
   })
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
@@ -150,7 +160,7 @@ for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
 }
 // Shade levels: 0=darkest … 3=white. Yield columns and grad rows each carry a level;
 // cells use whichever is darker (lower index).
-const shadeColors = ["#e0e0e0", "#ebebeb", "#f4f4f4", "white"];
+const shadeColors = ["#e9e9e9", "#efefef", "#f6f6f6", "white"];
 function cellShade(x1, y1) {
   const yLevel = x1 < 15 ? 0 : x1 < 20 ? 1 : x1 < 25 ? 2 : 3;
   const gLevel = y1 < 55 ? 0 : y1 < 60 ? 1 : y1 < 65 ? 2 : 3;
@@ -172,7 +182,7 @@ const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
   y: y1 + gradStep / 2,
   count: data.filter(d => d.grad_rate_6yr >= y1 && d.grad_rate_6yr < y1 + gradStep).length
 }));
-return {data,polyFit,coeffs,xMin,xMax,allTrendPoints,residuals,sd,trendPoints,bandPoints,yieldStep,gradStep,yieldStart,yieldEnd,grid,shadeColors,cellShade,cellCounts,colCounts,rowCounts};
+return {localeGroups,data,polyFit,coeffs,xMin,xMax,allTrendPoints,residuals,sd,trendPoints,bandPoints,yieldStep,gradStep,yieldStart,yieldEnd,grid,shadeColors,cellShade,cellCounts,colCounts,rowCounts};
 }});
 
 define({id: "3066ce7e", inputs: ["FileAttachment","html","display"], body: async (FileAttachment,html,display) => {
@@ -242,13 +252,19 @@ const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; g
 return {cardArea};
 }});
 
-define({id: "a4e6a687", inputs: ["searchQuery","Plot","yieldFloor","xMax","d3","gradFloor","grid","cellShade","data","colCounts","cellCounts","rowCounts","html","cardArea","collegeCard","display"], body: (searchQuery,Plot,yieldFloor,xMax,d3,gradFloor,grid,cellShade,data,colCounts,cellCounts,rowCounts,html,cardArea,collegeCard,display) => {
+define({id: "3c8f3c0d", inputs: ["searchQuery","data","Plot","yieldFloor","xMax","d3","gradFloor","grid","cellShade","colCounts","rowCounts","html","cardArea","collegeCard","display"], body: (searchQuery,data,Plot,yieldFloor,xMax,d3,gradFloor,grid,cellShade,colCounts,rowCounts,html,cardArea,collegeCard,display) => {
 {
   const query = searchQuery.trim().toLowerCase();
   const match = d => query && d.INSTNM.toLowerCase().includes(query);
 
-  const baseColor = d => d.sector_label === "Public" ? "#e53e3e" : "#3b82f6";
-  const hiColor   = d => d.sector_label === "Public" ? "#991b1b" : "#1e3a8a";
+  const baseColor = d => d.sector_label === "Public" ? "#ea580c" : "#1d4ed8";
+  const hiColor   = d => d.sector_label === "Public" ? "#9a3412" : "#1e3a8a";
+
+  const stackKeys = new Set(), dupeKeys = new Set();
+  for (const d of data) {
+    const key = `${d.yield_rate}|${d.grad_rate_6yr}`;
+    if (stackKeys.has(key)) dupeKeys.add(key); else stackKeys.add(key);
+  }
 
   const marginLeft = 65, marginRight = 45, marginTop = 36, marginBottom = 50;
   const plotWidth = 800, plotHeight = 600;
@@ -267,16 +283,15 @@ define({id: "a4e6a687", inputs: ["searchQuery","Plot","yieldFloor","xMax","d3","
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
-        r: d => match(d) ? 6 : 4,
+        r: d => match(d) ? 7 : 5,
+        symbol: d => dupeKeys.has(`${d.yield_rate}|${d.grad_rate_6yr}`) ? "square" : "circle",
         fill: d => match(d) ? hiColor(d) : baseColor(d),
-        fillOpacity: d => match(d) ? 0.9 : 0.22,
+        fillOpacity: d => match(d) ? 0.9 : 0.6,
         stroke: "none",
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
       Plot.gridY({ticks: d3.range(gradFloor, 101, 5)}),
-      Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
-      Plot.ruleY([85], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
     ],
   });
 
@@ -286,22 +301,6 @@ define({id: "a4e6a687", inputs: ["searchQuery","Plot","yieldFloor","xMax","d3","
   const xRange = xs.range;
   const yRange = ys.range;
   const ns = "http://www.w3.org/2000/svg";
-
-  // Cell count labels (appended after dots)
-  const labelGroup = document.createElementNS(ns, "g");
-  labelGroup.setAttribute("font-size", "9");
-  labelGroup.setAttribute("font-family", "sans-serif");
-  labelGroup.setAttribute("fill", "#777");
-  labelGroup.setAttribute("pointer-events", "none");
-  for (const cell of cellCounts) {
-    const t = document.createElementNS(ns, "text");
-    t.setAttribute("x", xs.apply(cell.x1) + 3);
-    t.setAttribute("y", ys.apply(cell.y1) - 2);
-    t.setAttribute("text-anchor", "start");
-    t.textContent = String(cell.count);
-    labelGroup.appendChild(t);
-  }
-  svgEl?.appendChild(labelGroup);
 
   // Y-axis label
   const plotCenterY = (marginTop + (plotHeight - marginBottom)) / 2;
@@ -478,6 +477,35 @@ const selectedState = view(Inputs.select(
 return {selectedState};
 }});
 
+define({id: "f7a345f6", inputs: ["view","Inputs"], outputs: ["localeFilter"], body: (view,Inputs) => {
+const localeFilter = view(Inputs.checkbox(
+  ["Cities", "Towns & Suburbs", "Rural"],
+  {
+    label: "Setting:",
+    value: ["Cities", "Towns & Suburbs", "Rural"],
+  }
+));
+return {localeFilter};
+}});
+
+define({id: "4fa6a40d", inputs: ["view","Inputs"], outputs: ["sizeFilter"], body: (view,Inputs) => {
+const sizeFilter = view(Inputs.checkbox(
+  ["Tiny", "Small", "Medium", "Large", "Very Large"],
+  {
+    label: "School size:",
+    value: ["Tiny", "Small", "Medium", "Large", "Very Large"],
+    format: d => ({
+      "Tiny": "Tiny (<1,000)",
+      "Small": "Small (<2,500)",
+      "Medium": "Medium (<10,000)",
+      "Large": "Large (<25,000)",
+      "Very Large": "Very Large (25,000+)",
+    })[d],
+  }
+));
+return {sizeFilter};
+}});
+
 define({id: "9cab76db", inputs: ["display","cardArea"], body: (display,cardArea) => {
 display(cardArea);
 }});
@@ -486,32 +514,26 @@ display(cardArea);
 </head>
 <body>
 <div id="observablehq-center">
-<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
-<nav>
-<div>Contents</div>
-<ol>
-<li class="observablehq-secondary-link"><a href="#residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate"> Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate</a></li>
-</ol>
-</nav>
-</aside>
 <main id="observablehq-main" class="observablehq">
 <h1 id="college-scatterplot" tabindex="-1"><a class="observablehq-header-anchor" href="#college-scatterplot">College Scatterplot</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
 <div class="observablehq observablehq--block"><!--:91520bb6:--></div>
-<div class="observablehq observablehq--block"><!--:6f4cae03:--></div>
+<div class="observablehq observablehq--block"><!--:cce87121:--></div>
 <div class="observablehq observablehq--block"><!--:3066ce7e:--></div>
-<h2 id="residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-broad-student-body-and-curriculum-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate</a></h2>
+<h2 id="residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
 <div class="observablehq observablehq--block"><!--:27fbd851:--></div>
-<div class="observablehq observablehq--block"><!--:a4e6a687:--></div>
+<div class="observablehq observablehq--block"><!--:3c8f3c0d:--></div>
 <div class="observablehq observablehq--block"><!--:7f6ebc12:--></div>
 <div class="observablehq observablehq--block"><!--:9cf9cb31:--></div>
 <div class="observablehq observablehq--block"><!--:de8854ec:--></div>
 <div class="observablehq observablehq--block"><!--:47f6d7b2:--></div>
+<div class="observablehq observablehq--block"><!--:f7a345f6:--></div>
+<div class="observablehq observablehq--block"><!--:4fa6a40d:--></div>
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-18T06:20:08">Apr 18, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-18T22:42:37">Apr 18, 2026</a>.</div>
 </footer>
 </div>
 </body>
