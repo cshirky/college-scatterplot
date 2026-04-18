@@ -1,3 +1,7 @@
+---
+toc: false
+---
+
 # College Scatterplot
 
 ```js
@@ -9,9 +13,19 @@ const good_schools = FileAttachment("data/good_schools.csv").csv({typed: true});
 ```
 
 ```js
+const localeGroups = new Set([
+  ...(localeFilter.includes("Cities") ? ["City"] : []),
+  ...(localeFilter.includes("Towns & Suburbs") ? ["Town", "Suburb"] : []),
+  ...(localeFilter.includes("Rural") ? ["Rural"] : []),
+]);
+
 const data = good_schools
   .filter(d => {
     if (d.instate_only === "true" && d.primary_recruit_state !== selectedState) return false;
+    if (!localeGroups.has(d.locale_group)) return false;
+    const ug = d.enrollment_ug;
+    const sizeLabel = ug < 1000 ? "Tiny" : ug < 2500 ? "Small" : ug < 10000 ? "Medium" : ug < 25000 ? "Large" : "Very Large";
+    if (!sizeFilter.includes(sizeLabel)) return false;
     return true;
   })
   .filter(d => d.grad_rate_6yr != null && d.yield_rate != null &&
@@ -83,7 +97,7 @@ for (let x1 = yieldStart; x1 < yieldEnd; x1 += yieldStep) {
 }
 // Shade levels: 0=darkest … 3=white. Yield columns and grad rows each carry a level;
 // cells use whichever is darker (lower index).
-const shadeColors = ["#e0e0e0", "#ebebeb", "#f4f4f4", "white"];
+const shadeColors = ["#e9e9e9", "#efefef", "#f6f6f6", "white"];
 function cellShade(x1, y1) {
   const yLevel = x1 < 15 ? 0 : x1 < 20 ? 1 : x1 < 25 ? 2 : 3;
   const gLevel = y1 < 55 ? 0 : y1 < 60 ? 1 : y1 < 65 ? 2 : 3;
@@ -158,7 +172,7 @@ const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
 }
 ```
 
-## ${data.length} Residential Colleges / Broad Student Body and Curriculum / Yield x Graduation Rate
+## ${data.length} Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate
 ```js
 const searchQuery = view(Inputs.text({placeholder: "Search for a school…", width: 300}));
 ```
@@ -172,8 +186,14 @@ const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; g
   const query = searchQuery.trim().toLowerCase();
   const match = d => query && d.INSTNM.toLowerCase().includes(query);
 
-  const baseColor = d => d.sector_label === "Public" ? "#e53e3e" : "#3b82f6";
-  const hiColor   = d => d.sector_label === "Public" ? "#991b1b" : "#1e3a8a";
+  const baseColor = d => d.sector_label === "Public" ? "#ea580c" : "#1d4ed8";
+  const hiColor   = d => d.sector_label === "Public" ? "#9a3412" : "#1e3a8a";
+
+  const stackKeys = new Set(), dupeKeys = new Set();
+  for (const d of data) {
+    const key = `${d.yield_rate}|${d.grad_rate_6yr}`;
+    if (stackKeys.has(key)) dupeKeys.add(key); else stackKeys.add(key);
+  }
 
   const marginLeft = 65, marginRight = 45, marginTop = 36, marginBottom = 50;
   const plotWidth = 800, plotHeight = 600;
@@ -192,16 +212,15 @@ const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; g
       Plot.dot(data, {
         x: "yield_rate",
         y: "grad_rate_6yr",
-        r: d => match(d) ? 6 : 4,
+        r: d => match(d) ? 7 : 5,
+        symbol: d => dupeKeys.has(`${d.yield_rate}|${d.grad_rate_6yr}`) ? "square" : "circle",
         fill: d => match(d) ? hiColor(d) : baseColor(d),
-        fillOpacity: d => match(d) ? 0.9 : 0.22,
+        fillOpacity: d => match(d) ? 0.9 : 0.6,
         stroke: "none",
       }),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
       Plot.gridY({ticks: d3.range(gradFloor, 101, 5)}),
-      Plot.ruleX([40], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
-      Plot.ruleY([85], {stroke: "green", strokeWidth: 1, strokeDasharray: "1,4"}),
     ],
   });
 
@@ -211,22 +230,6 @@ const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; g
   const xRange = xs.range;
   const yRange = ys.range;
   const ns = "http://www.w3.org/2000/svg";
-
-  // Cell count labels (appended after dots)
-  const labelGroup = document.createElementNS(ns, "g");
-  labelGroup.setAttribute("font-size", "9");
-  labelGroup.setAttribute("font-family", "sans-serif");
-  labelGroup.setAttribute("fill", "#777");
-  labelGroup.setAttribute("pointer-events", "none");
-  for (const cell of cellCounts) {
-    const t = document.createElementNS(ns, "text");
-    t.setAttribute("x", xs.apply(cell.x1) + 3);
-    t.setAttribute("y", ys.apply(cell.y1) - 2);
-    t.setAttribute("text-anchor", "start");
-    t.textContent = String(cell.count);
-    labelGroup.appendChild(t);
-  }
-  svgEl?.appendChild(labelGroup);
 
   // Y-axis label
   const plotCenterY = (marginTop + (plotHeight - marginBottom)) / 2;
@@ -395,6 +398,33 @@ const selectedState = view(Inputs.select(
     label: "Add regionally recruiting schools from state:",
     format: d => d ?? "None",
     value: null,
+  }
+));
+```
+
+```js
+const localeFilter = view(Inputs.checkbox(
+  ["Cities", "Towns & Suburbs", "Rural"],
+  {
+    label: "Setting:",
+    value: ["Cities", "Towns & Suburbs", "Rural"],
+  }
+));
+```
+
+```js
+const sizeFilter = view(Inputs.checkbox(
+  ["Tiny", "Small", "Medium", "Large", "Very Large"],
+  {
+    label: "School size:",
+    value: ["Tiny", "Small", "Medium", "Large", "Very Large"],
+    format: d => ({
+      "Tiny": "Tiny (<1,000)",
+      "Small": "Small (<2,500)",
+      "Medium": "Medium (<10,000)",
+      "Large": "Large (<25,000)",
+      "Very Large": "Very Large (25,000+)",
+    })[d],
   }
 ));
 ```
