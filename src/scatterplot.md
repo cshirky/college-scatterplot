@@ -43,48 +43,8 @@ const data = good_schools
     grad_rate_6yr: +d.grad_rate_6yr,
   }));
 
-function polyFit(dataArr, xKey, yKey, degree) {
-  const xs = dataArr.map(d => d[xKey]);
-  const ys = dataArr.map(d => d[yKey]);
-  const cols = degree + 1;
-  const XtX = Array.from({length: cols}, (_, i) =>
-    Array.from({length: cols}, (_, j) =>
-      xs.reduce((s, x) => s + Math.pow(x, i + j), 0)));
-  const Xty = Array.from({length: cols}, (_, i) =>
-    xs.reduce((s, x, k) => s + Math.pow(x, i) * ys[k], 0));
-  const aug = XtX.map((row, i) => [...row, Xty[i]]);
-  for (let col = 0; col < cols; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < cols; row++)
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-    for (let row = col + 1; row < cols; row++) {
-      const f = aug[row][col] / aug[col][col];
-      for (let k = col; k <= cols; k++) aug[row][k] -= f * aug[col][k];
-    }
-  }
-  const coeffs = new Array(cols);
-  for (let i = cols - 1; i >= 0; i--) {
-    coeffs[i] = aug[i][cols] / aug[i][i];
-    for (let k = i - 1; k >= 0; k--) aug[k][cols] -= aug[k][i] * coeffs[i];
-  }
-  return coeffs;
-}
-
-const coeffs = polyFit(data, "yield_rate", "grad_rate_6yr", 2);
 const xMin = d3.min(data, d => d.yield_rate);
 const xMax = d3.max(data, d => d.yield_rate);
-const allTrendPoints = d3.range(xMin, xMax, (xMax - xMin) / 200)
-  .map(x => ({x, y: coeffs.reduce((s, c, i) => s + c * Math.pow(x, i), 0)}));
-
-const residuals = data.map(d => {
-  const yHat = coeffs.reduce((s, c, i) => s + c * Math.pow(d.yield_rate, i), 0);
-  return d.grad_rate_6yr - yHat;
-});
-const sd = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / (residuals.length - 3));
-
-const trendPoints = allTrendPoints.filter(p => p.y <= 98);
-const bandPoints = allTrendPoints.filter(p => p.y - sd >= 50 && p.y + sd <= 102);
 
 const yieldStep = 5, gradStep = 5;
 const yieldStart = Math.floor(xMin / yieldStep) * yieldStep;
@@ -103,14 +63,6 @@ function cellShade(x1, y1) {
   const gLevel = y1 < 55 ? 0 : y1 < 60 ? 1 : y1 < 65 ? 2 : 3;
   return shadeColors[Math.min(yLevel, gLevel)];
 }
-const cellCounts = grid.map(q => ({
-  ...q,
-  count: data.filter(d =>
-    d.yield_rate    >= q.x1 && d.yield_rate    < q.x2 &&
-    d.grad_rate_6yr >= q.y1 && d.grad_rate_6yr < q.y2
-  ).length
-})).filter(q => q.count > 0);
-
 const colCounts = d3.range(yieldStart, yieldEnd, yieldStep).map(x1 => ({
   x: x1 + yieldStep / 2,
   count: data.filter(d => d.yield_rate >= x1 && d.yield_rate < x1 + yieldStep).length
@@ -153,7 +105,7 @@ const rowCounts = d3.range(gradFloor, 100, gradStep).map(y1 => ({
       <li><p><strong>6 Year Graduation Rate</strong> is just what it sounds like: how many students graduated by 6 years after their arrival?</p> 
         <p>Graduation rate is the single most important metric, capturing how prepared and serious the students are, and how well the college supports them. (The Bachelor's is often called a "4 year degree", but many students take more time, hence the 6 year window.) If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
     </ul>
-    <p>The chart below lists the tk colleges (including those inside universities) that:</p> 
+    <p>The chart below lists colleges (including those inside universities) that:</p>
     <ol>
       <li>Have 10%+ Yield and 50%+ 6 year graduation rate (You can adjust this.)</li> 
       <li>Offers more Bachelor's degrees than Associates degrees</li>
