@@ -61,8 +61,8 @@
 import {define} from "./_observablehq/client.7778922b.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776565660167,"size":565993});
-registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776565660182,"size":122429});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776660551957,"size":565993});
+registerFile("./scatterplot_all_schools.png", {"name":"./scatterplot_all_schools.png","mimeType":"image/png","path":"./_file/scatterplot_all_schools.b1a025e6.png","lastModified":1776660551970,"size":122429});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.0434fb94.js");
@@ -75,10 +75,10 @@ const good_schools = FileAttachment("./data/good_schools.csv").csv({typed: true}
 return {good_schools};
 }});
 
-define({id: "3f456b4d", inputs: ["localeFilter","good_schools","selectedState","sizeFilter","yieldFloor","gradFloor","d3"], outputs: ["localeGroups","data","xMin","xMax","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","colCounts","rowCounts"], body: (localeFilter,good_schools,selectedState,sizeFilter,yieldFloor,gradFloor,d3) => {
+define({id: "5fc7eaca", inputs: ["localeFilter","good_schools","selectedState","sizeFilter","yieldFloor","gradFloor","d3"], outputs: ["localeGroups","data","xMin","xMax","yieldStep","gradStep","yieldStart","yieldEnd","grid","shadeColors","cellShade","colCounts","rowCounts"], body: (localeFilter,good_schools,selectedState,sizeFilter,yieldFloor,gradFloor,d3) => {
 const localeGroups = new Set([
   ...(localeFilter.includes("Cities") ? ["City"] : []),
-  ...(localeFilter.includes("Towns & Suburbs") ? ["Town", "Suburb"] : []),
+  ...(localeFilter.includes("Towns or Suburbs") ? ["Town", "Suburb"] : []),
   ...(localeFilter.includes("Rural") ? ["Rural"] : []),
 ]);
 
@@ -204,7 +204,7 @@ const cardArea = html`<div style="display:grid; grid-template-columns:1fr 1fr; g
 return {cardArea};
 }});
 
-define({id: "3c8f3c0d", inputs: ["searchQuery","data","Plot","yieldFloor","xMax","d3","gradFloor","grid","cellShade","colCounts","rowCounts","html","cardArea","collegeCard","display"], body: (searchQuery,data,Plot,yieldFloor,xMax,d3,gradFloor,grid,cellShade,colCounts,rowCounts,html,cardArea,collegeCard,display) => {
+define({id: "c970be26", inputs: ["searchQuery","data","Plot","yieldFloor","xMax","d3","gradFloor","grid","cellShade","colCounts","rowCounts","html","cardArea","collegeCard","display"], body: (searchQuery,data,Plot,yieldFloor,xMax,d3,gradFloor,grid,cellShade,colCounts,rowCounts,html,cardArea,collegeCard,display) => {
 {
   const query = searchQuery.trim().toLowerCase();
   const match = d => query && d.INSTNM.toLowerCase().includes(query);
@@ -236,11 +236,14 @@ define({id: "3c8f3c0d", inputs: ["searchQuery","data","Plot","yieldFloor","xMax"
         x: "yield_rate",
         y: "grad_rate_6yr",
         r: d => match(d) ? 7 : 5,
-        symbol: d => dupeKeys.has(`${d.yield_rate}|${d.grad_rate_6yr}`) ? "square" : "circle",
+        symbol: d => dupeKeys.has(`${d.yield_rate}|${d.grad_rate_6yr}`) ? "diamond" : "circle",
         fill: d => match(d) ? hiColor(d) : baseColor(d),
-        fillOpacity: d => match(d) ? 0.9 : 0.6,
+        fillOpacity: d => match(d) ? 0.9 : (query ? 0.15 : 0.6),
         stroke: "none",
       }),
+      Plot.ruleX(data.filter(match), {x: "yield_rate", y1: gradFloor, y2: "grad_rate_6yr", stroke: "#16a34a", strokeWidth: 1, strokeDasharray: "4,3"}),
+      Plot.ruleY(data.filter(match), {y: "grad_rate_6yr", x1: yieldFloor, x2: "yield_rate", stroke: "#16a34a", strokeWidth: 1, strokeDasharray: "4,3"}),
+      Plot.text(data.filter(match), {x: "yield_rate", y: "grad_rate_6yr", text: "INSTNM", dy: -10, fontSize: 11, fontWeight: "600", fill: "#111", stroke: "white", strokeWidth: 3, paintOrder: "stroke"}),
       Plot.text(colCounts, {x: "x", y: 100, text: "count", textAnchor: "middle", lineAnchor: "bottom", dy: -4, fontSize: 9, fontFamily: "sans-serif", fill: "#888", clip: false}),
       Plot.gridX({ticks: d3.range(yieldFloor, xMax + 5, 5)}),
       Plot.gridY({ticks: d3.range(gradFloor, 101, 5)}),
@@ -372,6 +375,54 @@ define({id: "3c8f3c0d", inputs: ["searchQuery","data","Plot","yieldFloor","xMax"
     }
   });
 
+  // Legend: lower-right corner of plot area
+  // d3 diamond for r=5: M0,-8.25 L4.76,0 L0,8.25 L-4.76,0 — height/width ratio = sqrt(3)
+  const legW = 185, legPad = 7, legShapeR = 4;
+  const legDiamondHH = legShapeR * (8.25 / 4.76); // half-height matching d3 ratio ≈ 6.93
+  const legRow1Y = 13;   // relative to legRectY
+  const legRow2Y = 33;   // enough clearance for diamond half-height above
+  const legH = legRow2Y + Math.ceil(legDiamondHH) + legPad;
+  const legRectX = xRange[1] - legW - 8;
+  const legRectY = plotHeight - marginBottom - legH - 8;
+  const legShapeX = legRectX + legPad + legShapeR;
+  const legTextX  = legRectX + legPad + legShapeR * 2 + 6;
+
+  const r1Y = legRectY + legRow1Y, r2Y = legRectY + legRow2Y;
+
+  const legBg = document.createElementNS(ns, "rect");
+  legBg.setAttribute("x", legRectX); legBg.setAttribute("y", legRectY);
+  legBg.setAttribute("width", legW); legBg.setAttribute("height", legH);
+  legBg.setAttribute("fill", "white"); legBg.setAttribute("stroke", "#ccc");
+  legBg.setAttribute("stroke-width", "1"); legBg.setAttribute("rx", "3");
+  svgEl?.appendChild(legBg);
+
+  const legCircle = document.createElementNS(ns, "circle");
+  legCircle.setAttribute("cx", legShapeX); legCircle.setAttribute("cy", r1Y);
+  legCircle.setAttribute("r", legShapeR); legCircle.setAttribute("fill", "#888");
+  legCircle.setAttribute("fill-opacity", "0.6");
+  svgEl?.appendChild(legCircle);
+
+  const legT1 = document.createElementNS(ns, "text");
+  legT1.setAttribute("x", legTextX); legT1.setAttribute("y", r1Y);
+  legT1.setAttribute("font-size", "9"); legT1.setAttribute("font-family", "sans-serif");
+  legT1.setAttribute("fill", "#555"); legT1.setAttribute("dominant-baseline", "middle");
+  legT1.setAttribute("text-anchor", "start");
+  legT1.textContent = "One school at this position";
+  svgEl?.appendChild(legT1);
+
+  const legDiamond = document.createElementNS(ns, "path");
+  legDiamond.setAttribute("d", `M${legShapeX},${r2Y - legDiamondHH} L${legShapeX + legShapeR},${r2Y} L${legShapeX},${r2Y + legDiamondHH} L${legShapeX - legShapeR},${r2Y} Z`);
+  legDiamond.setAttribute("fill", "#888"); legDiamond.setAttribute("fill-opacity", "0.6");
+  svgEl?.appendChild(legDiamond);
+
+  const legT2 = document.createElementNS(ns, "text");
+  legT2.setAttribute("x", legTextX); legT2.setAttribute("y", r2Y);
+  legT2.setAttribute("font-size", "9"); legT2.setAttribute("font-family", "sans-serif");
+  legT2.setAttribute("fill", "#555"); legT2.setAttribute("dominant-baseline", "middle");
+  legT2.setAttribute("text-anchor", "start");
+  legT2.textContent = "Two+ schools at this position";
+  svgEl?.appendChild(legT2);
+
   display(wrapper);
 }
 }});
@@ -429,22 +480,22 @@ const selectedState = view(Inputs.select(
 return {selectedState};
 }});
 
-define({id: "f7a345f6", inputs: ["view","Inputs"], outputs: ["localeFilter"], body: (view,Inputs) => {
+define({id: "7ebb362a", inputs: ["view","Inputs"], outputs: ["localeFilter"], body: (view,Inputs) => {
 const localeFilter = view(Inputs.checkbox(
-  ["Cities", "Towns & Suburbs", "Rural"],
+  ["Cities", "Towns or Suburbs", "Rural"],
   {
     label: "Setting:",
-    value: ["Cities", "Towns & Suburbs", "Rural"],
+    value: ["Cities", "Towns or Suburbs", "Rural"],
   }
 ));
 return {localeFilter};
 }});
 
-define({id: "4fa6a40d", inputs: ["view","Inputs"], outputs: ["sizeFilter"], body: (view,Inputs) => {
+define({id: "c0fc38f5", inputs: ["view","Inputs"], outputs: ["sizeFilter"], body: (view,Inputs) => {
 const sizeFilter = view(Inputs.checkbox(
   ["Tiny", "Small", "Medium", "Large", "Very Large"],
   {
-    label: "School size:",
+    label: "Undergrad population:",
     value: ["Tiny", "Small", "Medium", "Large", "Very Large"],
     format: d => ({
       "Tiny": "Tiny (<1,000)",
@@ -470,22 +521,22 @@ display(cardArea);
 <h1 id="college-scatterplot" tabindex="-1"><a class="observablehq-header-anchor" href="#college-scatterplot">College Scatterplot</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
 <div class="observablehq observablehq--block"><!--:91520bb6:--></div>
-<div class="observablehq observablehq--block"><!--:3f456b4d:--></div>
+<div class="observablehq observablehq--block"><!--:5fc7eaca:--></div>
 <div class="observablehq observablehq--block"><!--:330619ae:--></div>
 <h2 id="residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
 <div class="observablehq observablehq--block"><!--:27fbd851:--></div>
-<div class="observablehq observablehq--block"><!--:3c8f3c0d:--></div>
+<div class="observablehq observablehq--block"><!--:c970be26:--></div>
 <div class="observablehq observablehq--block"><!--:7f6ebc12:--></div>
 <div class="observablehq observablehq--block"><!--:9cf9cb31:--></div>
 <div class="observablehq observablehq--block"><!--:de8854ec:--></div>
 <div class="observablehq observablehq--block"><!--:47f6d7b2:--></div>
-<div class="observablehq observablehq--block"><!--:f7a345f6:--></div>
-<div class="observablehq observablehq--block"><!--:4fa6a40d:--></div>
+<div class="observablehq observablehq--block"><!--:7ebb362a:--></div>
+<div class="observablehq observablehq--block"><!--:c0fc38f5:--></div>
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-19T02:27:46">Apr 19, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-20T04:49:19">Apr 20, 2026</a>.</div>
 </footer>
 </div>
 </body>
