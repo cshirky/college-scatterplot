@@ -61,8 +61,8 @@
 import {define} from "./_observablehq/client.7778922b.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776873545609,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1776873545611,"size":943775});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776881041281,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1776881041283,"size":943775});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.c0477d60.js");
@@ -75,8 +75,8 @@ const good_schools = FileAttachment("./data/good_schools.csv").csv({typed: true}
 return {good_schools};
 }});
 
-define({id: "6eaba846", inputs: ["FileAttachment"], outputs: ["programs_raw","programsByUnitid"], body: (FileAttachment) => {
-const programs_raw = FileAttachment("./data/programs.csv").csv({typed: true});
+define({id: "a08eb915", inputs: ["FileAttachment"], outputs: ["programs_raw","programsByUnitid"], body: async (FileAttachment) => {
+const programs_raw = await FileAttachment("./data/programs.csv").csv({typed: true});
 const programsByUnitid = new Map();
 for (const row of programs_raw) {
   const key = String(row.UNITID);
@@ -153,7 +153,7 @@ const rowCounts = d3.range(yieldStart, Math.ceil(yieldMax / yieldStep) * yieldSt
 return {localeGroups,data,yieldMax,yieldStep,gradStep,yieldStart,yieldEnd,gradStart,gradEnd,grid,shadeColors,cellShade,colCounts,rowCounts};
 }});
 
-define({id: "8f6b8f09", inputs: ["html","display"], body: (html,display) => {
+define({id: "73b1e220", inputs: ["html","display"], body: (html,display) => {
 {
   const details = html`<details open style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
   <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
@@ -182,7 +182,7 @@ define({id: "8f6b8f09", inputs: ["html","display"], body: (html,display) => {
       <li><p><strong>Yield</strong> is an input, a measure of the percentage of students who were admitted and chose to go.</p> 
       <p>Yield measures a <em>choice</em> -- if a student says Yes to one school, they are saying No to every other school they got into. Colleges obsess over yield internally, but don't mention it to applicants. If a school offers a spot to 100 students, and only 10 go, that tells you something very different than if 40 go, or 60: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. Schoool C, at 60%, is beloved. So, higher Yield is a good proxy for an engaged and committed student body.</p></li>
       <li><p><strong>6 Year Graduation Rate</strong> is an output, and just what it sounds like: how many students have graduated 6 years after their arrival? (The Bachelor's is often called a 4 year degree, but many students take more time, hence the 6 year window.)</p> 
-        <p>Colleges don't like to talk about graduation rate either; out of thousands of colleges in the U.S. fewer than 100 graduate 9 out of 10 students, while thousands gradaute less than half their incoming classes. Gradaution rate is the single most important metric. It captures something about how prepared and serious the students there are, and something about how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
+        <p>Colleges don't like to talk about graduation rate either; out of thousands of colleges in the U.S. fewer than 100 graduate 9 out of 10 students, while thousands graduate less than half their incoming classes. Graduation rate is the single most important metric. It captures something about how prepared and serious the students there are, and something about how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
     </ul>
     <p>The chart below shows colleges that:</p>
     <ul>
@@ -543,9 +543,9 @@ display(cardArea);
 <h1 id="the-landscape-of-american-colleges" tabindex="-1"><a class="observablehq-header-anchor" href="#the-landscape-of-american-colleges">The Landscape of American Colleges</a></h1>
 <div class="observablehq observablehq--block"><!--:01b94a85:--></div>
 <div class="observablehq observablehq--block"><!--:91520bb6:--></div>
-<div class="observablehq observablehq--block"><!--:6eaba846:--></div>
+<div class="observablehq observablehq--block"><!--:a08eb915:--></div>
 <div class="observablehq observablehq--block"><!--:eac9a5bc:--></div>
-<div class="observablehq observablehq--block"><!--:8f6b8f09:--></div>
+<div class="observablehq observablehq--block"><!--:73b1e220:--></div>
 <h2 id="residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate</a></h2>
 <div class="observablehq observablehq--block"><!--:144cb671:--></div>
 <div class="observablehq observablehq--block"><!--:27fbd851:--></div>
@@ -556,7 +556,7 @@ display(cardArea);
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-22T15:59:12">Apr 22, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-22T18:04:13">Apr 22, 2026</a>.</div>
 </footer>
 </div>
 </body>
