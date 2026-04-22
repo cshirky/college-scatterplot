@@ -2,7 +2,7 @@ import { html } from "../../_npm/htl@0.3.1/72f4716c.js";
 
 const TIERS = ["definitely", "probably", "maybe"];
 
-export function getDeck() {
+function getDeck() {
   try {
     const raw = JSON.parse(localStorage.getItem("college-deck") || "{}");
     if (Array.isArray(raw)) return { definitely: new Set(), probably: new Set(), maybe: new Set(raw) };
@@ -14,7 +14,7 @@ export function getDeck() {
   } catch { return { definitely: new Set(), probably: new Set(), maybe: new Set() }; }
 }
 
-export function saveDeck(deck) {
+function saveDeck(deck) {
   localStorage.setItem("college-deck", JSON.stringify({
     definitely: [...deck.definitely],
     probably:   [...deck.probably],
@@ -142,9 +142,7 @@ function buildProse(school) {
   return { p1, p2 };
 }
 
-// ── schoolPrograms: [{cip_family, cip_label, total_awards}] for this school
-// ── cipSchoolCounts: Map<cip_family, number> — how many schools offer each
-export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new Map()) {
+export function collegeCard(school) {
   if (!school) return html``;
 
   const wikiUrl    = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
@@ -193,12 +191,11 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     const r = school.admission_rate > 1 ? school.admission_rate / 100 : school.admission_rate;
     admPie.title = `${Math.round(r * 100)}% admission rate`;
   }
-  const admRate = admPie;
 
   const statItems = [
     school.yield_rate    != null ? `${pct(school.yield_rate)} yield`   : null,
     school.grad_rate_6yr != null ? `${pct(school.grad_rate_6yr)} grad` : null,
-    admRate,
+    admPie,
   ].filter(Boolean);
 
   // ── Section 1: header ────────────────────────────────────────────────────
@@ -226,26 +223,13 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
     ${p2.length > 0 ? prosePara(p2) : html``}
   </div>`;
 
-  // ── Section 3: majors ────────────────────────────────────────────────────
-  const topMajors = [...schoolPrograms]
-    .sort((a, b) => b.total_awards - a.total_awards)
-    .slice(0, 5);
-  const distinctiveMajors = [...schoolPrograms]
-    .sort((a, b) => (cipSchoolCounts.get(a.cip_family) || 999) - (cipSchoolCounts.get(b.cip_family) || 999))
-    .slice(0, 5);
-
-  const majorsSection = schoolPrograms.length === 0 ? html`` : html`<div style="padding:0.6rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.78rem; color:#444;">
-    <div style="margin-bottom:0.3rem;"><span style="font-weight:600; color:#555;">Top majors:</span> ${topMajors.map(p => p.cip_label).join(", ")}</div>
-    <div><span style="font-weight:600; color:#555;">Distinctive:</span> ${distinctiveMajors.map(p => p.cip_label).join(", ")}</div>
-  </div>`;
-
-  // ── Section 4: external links ────────────────────────────────────────────
+  // ── Section 3: external links ────────────────────────────────────────────
   const externalLinks = html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.78rem;">
     ${websiteUrl ? html`<a href="${websiteUrl}" target="_blank" rel="noopener" style="color:#2563eb;">Website ↗</a>` : html``}
     <a href="${usnewsUrl}" target="_blank" rel="noopener" style="color:#2563eb;">US News ↗</a>
   </div>`;
 
-  // ── Section 5: save to deck ──────────────────────────────────────────────
+  // ── Section 4: save to deck ──────────────────────────────────────────────
   const tierStyles = {
     definitely: { active: { bg: "#dcfce7", color: "#166534", border: "#86efac" }, label: "Definitely" },
     probably:   { active: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" }, label: "Probably"   },
@@ -264,7 +248,6 @@ export function collegeCard(school, schoolPrograms = [], cipSchoolCounts = new M
   const card = html`<div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; font-size:0.9rem; background:var(--theme-background,#fff);">
     ${header}
     ${proseSection}
-    ${majorsSection}
     ${externalLinks}
     ${saveSection}
   </div>`;
