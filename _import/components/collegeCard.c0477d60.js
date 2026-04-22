@@ -54,9 +54,6 @@ function sectorAdjective(sector) {
   return "";
 }
 
-function localePhrase(locale) {
-  return { City: "an urban area", Suburb: "a suburban area", Town: "a small town", Rural: "a rural area" }[locale] || null;
-}
 
 function roughEnroll(n) {
   if (n >= 20000) return Math.round(n / 5000) * 5000;
@@ -68,15 +65,21 @@ function roughEnroll(n) {
 function buildProse(school) {
   const p1 = [], p2 = [];
 
-  // ── Para 1: identity, location, designations, size ───────────────────────
-  const kind   = instKind(school);
-  const sector = sectorAdjective(school.sector_label || "");
-  const locale = localePhrase(school.locale_group);
+  // ── Para 1: place and community (Option A style) ─────────────────────────
+  const kind    = instKind(school);
+  const sector  = sectorAdjective(school.sector_label || "");
   const typeStr = sector ? `${sector} ${kind}` : kind;
+  const ug      = school.enrollment_ug != null ? roughEnroll(+school.enrollment_ug) : null;
 
-  let s1 = `${school.INSTNM} is a ${typeStr} in ${school.CITY}, ${school.STABBR}`;
-  if (locale) s1 += `, ${locale}`;
-  s1 += ".";
+  // Locale-flavored city phrase
+  const lg = school.locale_group;
+  let cityPhrase = `${school.CITY}, ${school.STABBR}`;
+  if (lg === "Rural") cityPhrase = `rural ${school.CITY}, ${school.STABBR}`;
+  else if (lg === "Town") cityPhrase = `${school.CITY}, ${school.STABBR}, a small town`;
+
+  let s1 = `${school.INSTNM} is a ${typeStr}`;
+  if (ug != null) s1 += ` — about ${ug.toLocaleString()} students —`;
+  s1 += ` in ${cityPhrase}.`;
   p1.push(s1);
 
   // Religious affiliation
@@ -85,53 +88,85 @@ function buildProse(school) {
 
   // Special designations
   const specials = [
-    +school.hbcu     === 1 ? "a Historically Black College or University (HBCU)" : null,
-    +school.hsi      === 1 ? "a Hispanic-Serving Institution (HSI)" : null,
+    +school.hbcu      === 1 ? "a Historically Black College or University (HBCU)" : null,
+    +school.hsi       === 1 ? "a Hispanic-Serving Institution (HSI)" : null,
     +school.womenonly === 1 ? "a women's college" : null,
-    +school.tribal   === 1 ? "a Tribal College" : null,
+    +school.tribal    === 1 ? "a Tribal College" : null,
     +school.landgrant === 1 ? "a land-grant institution" : null,
   ].filter(Boolean);
   if (specials.length === 1) p1.push(`It is ${specials[0]}.`);
   else if (specials.length > 1) p1.push(`It is ${specials.slice(0, -1).join(", ")} and ${specials.at(-1)}.`);
 
-  // Enrollment
-  if (school.enrollment_ug != null) {
-    const ug = roughEnroll(school.enrollment_ug);
-    let s = `It enrolls about ${ug.toLocaleString()} undergraduates`;
-    if (school.enrollment_total != null && school.enrollment_total > 0) {
-      const gradFrac = (school.enrollment_total - school.enrollment_ug) / school.enrollment_total;
-      if (gradFrac > 0.35)      s += `, along with a large graduate population`;
-      else if (gradFrac > 0.15) s += `, plus some graduate students`;
-    }
-    s += ".";
+  // Demographics — only if notably skewed
+  const demParts = [];
+  if (school.pct_women != null) {
+    const w = Math.round(+school.pct_women);
+    if (w >= 60 || w <= 38) demParts.push(`${w}% women`);
+  }
+  if (school.pct_nonresident != null) {
+    const nr = Math.round(+school.pct_nonresident);
+    if (nr >= 10) demParts.push(`about ${nr}% of students from outside the US`);
+  }
+  if (demParts.length > 0) p1.push(`The student body is ${demParts.join("; ")}.`);
+
+  // Yield as commitment signal (Option A framing)
+  if (school.yield_rate != null) {
+    const y = Math.round(+school.yield_rate);
+    let s;
+    if (y >= 50)      s = `${y}% of admitted students choose to enroll — a high yield for a school of this type.`;
+    else if (y >= 30) s = `${y}% of admitted students choose to enroll.`;
+    else              s = `${y}% of admitted students choose to enroll, meaning most who are admitted also have other options.`;
     p1.push(s);
   }
 
-  // ── Para 2: selectivity, cost, outcomes ──────────────────────────────────
+  // ── Para 2: can I get in? can I afford it? what happens after? ────────────
 
-  // Grad rate
-  const gradRate = school.grad_rate_6yr;
-  if (gradRate != null) {
-    const g = Math.round(gradRate);
-    p2.push(`${g}% of students graduate within six years.`);
+  // Admissions (Option C)
+  if (school.admission_rate != null) {
+    const adm = Math.round(+school.admission_rate > 1 ? +school.admission_rate : +school.admission_rate * 100);
+    const shortName = school.INSTNM.replace(/\bUniversity\b/g, "U.");
+    let s = `${shortName} admits ${adm}% of applicants`;
+    const sat = school.sat_avg ? Math.round(+school.sat_avg) : null;
+    const act = school.act_avg ? Math.round(+school.act_avg) : null;
+    if (sat != null && sat > 0)       s += ` (average SAT: ${sat})`;
+    else if (act != null && act > 0)  s += ` (average ACT: ${act})`;
+    s += ".";
+    p2.push(s);
   }
 
-  // Net price + Pell
-  const netPrice = school.net_price;
-  const pell     = school.pell_2023;
-  if (netPrice != null || pell != null) {
-    const parts = [];
-    if (netPrice != null) parts.push(`the average net price is $${Math.round(netPrice).toLocaleString()} per year`);
-    if (pell != null)     parts.push(`${Math.round(pell * 100)}% of students receive Pell grants`);
-    const s = parts.join("; ");
+  // Cost (Option C)
+  const isPublic = /public/i.test(school.sector_label || "");
+  const net      = school.net_price      != null ? Math.round(+school.net_price)      : null;
+  const inState  = school.tuition_in_state  != null ? Math.round(+school.tuition_in_state)  : null;
+  const outState = school.tuition_out_of_state != null ? Math.round(+school.tuition_out_of_state) : null;
+
+  if (isPublic && inState != null && outState != null && inState !== outState) {
+    let s = `In-state tuition is $${inState.toLocaleString()}; out-of-state is $${outState.toLocaleString()}.`;
+    if (net != null) s += ` The average student pays about $${net.toLocaleString()} per year after aid.`;
+    p2.push(s);
+  } else if (net != null && inState != null) {
+    p2.push(`Tuition is about $${inState.toLocaleString()}, but the average student pays about $${net.toLocaleString()} per year after aid.`);
+  } else if (net != null) {
+    p2.push(`The average student pays about $${net.toLocaleString()} per year after aid.`);
+  }
+
+  const pellDebt = [];
+  if (school.pell_2023 != null) pellDebt.push(`${Math.round(+school.pell_2023 * 100)}% of students receive Pell grants`);
+  if (school.grad_debt_median != null) pellDebt.push(`median debt at graduation is $${Math.round(+school.grad_debt_median).toLocaleString()}`);
+  if (pellDebt.length > 0) {
+    const s = pellDebt.join("; ");
     p2.push(`${s[0].toUpperCase()}${s.slice(1)}.`);
   }
 
-  // Earnings
-  if (school.saec_earnings) {
-    let s = `Graduates earn a median of $${Math.round(school.saec_earnings).toLocaleString()} eight years after enrollment`;
+  // Outcomes
+  if (school.grad_rate_6yr != null) {
+    p2.push(`${Math.round(+school.grad_rate_6yr)}% of students graduate within six years.`);
+  }
+
+  if (school.saec_earnings != null) {
+    let s = `Graduates earn a median of $${Math.round(+school.saec_earnings).toLocaleString()} eight years after enrollment`;
     if (school.earnings_ratio != null) {
-      const r = Number(school.earnings_ratio);
+      const r = +school.earnings_ratio;
       if (r >= 1.15)      s += `, above average for similar institutions`;
       else if (r <= 0.85) s += `, below average for similar institutions`;
     }
@@ -142,7 +177,7 @@ function buildProse(school) {
   return { p1, p2 };
 }
 
-export function collegeCard(school) {
+export function collegeCard(school, topMajors = []) {
   if (!school) return html``;
 
   const wikiUrl    = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.INSTNM)}&go=Go`;
@@ -223,13 +258,18 @@ export function collegeCard(school) {
     ${p2.length > 0 ? prosePara(p2) : html``}
   </div>`;
 
-  // ── Section 3: external links ────────────────────────────────────────────
+  // ── Section 3: majors ────────────────────────────────────────────────────
+  const majorsSection = topMajors.length === 0 ? html`` : html`<div style="padding:0.45rem 1rem; border-bottom:1px solid #f0f0f0; font-size:0.78rem; color:#444;">
+    <span style="font-weight:600; color:#555;">Top majors:</span> ${topMajors.map(m => m.cip_label).join(", ")}
+  </div>`;
+
+  // ── Section 4: external links ────────────────────────────────────────────
   const externalLinks = html`<div style="padding:0.5rem 1rem; border-bottom:1px solid #f0f0f0; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.78rem;">
     ${websiteUrl ? html`<a href="${websiteUrl}" target="_blank" rel="noopener" style="color:#2563eb;">Website ↗</a>` : html``}
     <a href="${usnewsUrl}" target="_blank" rel="noopener" style="color:#2563eb;">US News ↗</a>
   </div>`;
 
-  // ── Section 4: save to deck ──────────────────────────────────────────────
+  // ── Section 5: save to deck ──────────────────────────────────────────────
   const tierStyles = {
     definitely: { active: { bg: "#dcfce7", color: "#166534", border: "#86efac" }, label: "Definitely" },
     probably:   { active: { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" }, label: "Probably"   },
@@ -248,6 +288,7 @@ export function collegeCard(school) {
   const card = html`<div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; font-size:0.9rem; background:var(--theme-background,#fff);">
     ${header}
     ${proseSection}
+    ${majorsSection}
     ${externalLinks}
     ${saveSection}
   </div>`;
