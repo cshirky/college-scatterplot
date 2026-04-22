@@ -61,8 +61,8 @@
 import {define} from "./_observablehq/client.7778922b.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776881041281,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1776881041283,"size":943775});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1776891723900,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1776891723903,"size":943775});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.c0477d60.js");
@@ -474,7 +474,23 @@ const stateOptions = [
 return {stateOptions};
 }});
 
-define({id: "de9f02f6", inputs: ["view","Inputs","stateOptions"], outputs: ["controls"], body: (view,Inputs,stateOptions) => {
+define({id: "b5e09a48", inputs: ["good_schools"], outputs: ["localeCounts","sizeCounts"], body: (good_schools) => {
+const localeCounts = {
+  "Cities":           good_schools.filter(d => d.locale_group === "City").length,
+  "Towns or Suburbs": good_schools.filter(d => d.locale_group === "Town" || d.locale_group === "Suburb").length,
+  "Rural":            good_schools.filter(d => d.locale_group === "Rural").length,
+};
+const sizeCounts = {
+  "Tiny":      good_schools.filter(d => +d.enrollment_ug < 1000).length,
+  "Small":     good_schools.filter(d => +d.enrollment_ug >= 1000  && +d.enrollment_ug < 2500).length,
+  "Medium":    good_schools.filter(d => +d.enrollment_ug >= 2500  && +d.enrollment_ug < 10000).length,
+  "Large":     good_schools.filter(d => +d.enrollment_ug >= 10000 && +d.enrollment_ug < 25000).length,
+  "Very Large":good_schools.filter(d => +d.enrollment_ug >= 25000).length,
+};
+return {localeCounts,sizeCounts};
+}});
+
+define({id: "79916d3f", inputs: ["view","Inputs","stateOptions","localeCounts","sizeCounts"], outputs: ["controls"], body: (view,Inputs,stateOptions,localeCounts,sizeCounts) => {
 const controls = view(Inputs.form(
   {
     yieldFloor: Inputs.select([10, 15, 20, 25], {
@@ -497,16 +513,17 @@ const controls = view(Inputs.form(
     localeFilter: Inputs.checkbox(["Cities", "Towns or Suburbs", "Rural"], {
       label: "Setting:",
       value: ["Cities", "Towns or Suburbs", "Rural"],
+      format: d => `${d} (${localeCounts[d]})`,
     }),
     sizeFilter: Inputs.checkbox(["Tiny", "Small", "Medium", "Large", "Very Large"], {
       label: "Undergrad population:",
       value: ["Tiny", "Small", "Medium", "Large", "Very Large"],
       format: d => ({
-        "Tiny": "Tiny (<1,000)",
-        "Small": "Small (<2,500)",
-        "Medium": "Medium (<10,000)",
-        "Large": "Large (<25,000)",
-        "Very Large": "Very Large (25,000+)",
+        "Tiny":      `Tiny (<1,000) (${sizeCounts["Tiny"]})`,
+        "Small":     `Small (<2,500) (${sizeCounts["Small"]})`,
+        "Medium":    `Medium (<10,000) (${sizeCounts["Medium"]})`,
+        "Large":     `Large (<25,000) (${sizeCounts["Large"]})`,
+        "Very Large":`Very Large (25,000+) (${sizeCounts["Very Large"]})`,
       })[d],
     }),
   },
@@ -551,12 +568,13 @@ display(cardArea);
 <div class="observablehq observablehq--block"><!--:27fbd851:--></div>
 <div class="observablehq observablehq--block"><!--:532548d1:--></div>
 <div class="observablehq observablehq--block"><!--:e8852c14:--></div>
-<div class="observablehq observablehq--block"><!--:de9f02f6:--></div>
+<div class="observablehq observablehq--block"><!--:b5e09a48:--></div>
+<div class="observablehq observablehq--block"><!--:79916d3f:--></div>
 <div class="observablehq observablehq--block"><!--:f5d59d16:--></div>
 <div class="observablehq observablehq--block"><!--:9cab76db:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-22T18:04:13">Apr 22, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-22T21:02:15">Apr 22, 2026</a>.</div>
 </footer>
 </div>
 </body>
