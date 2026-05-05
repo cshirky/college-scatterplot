@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.3">
+<title>My Deck | College Scatterplot</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
+<link rel="modulepreload" href="./_observablehq/client.18fd8a4c.js">
+<link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.73a8ec5a.js">
+<link rel="modulepreload" href="./_import/components/collegeCard.c0477d60.js">
+<link rel="modulepreload" href="./_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<script type="module">
+
+import {define} from "./_observablehq/client.18fd8a4c.js";
+import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
+
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1777990100469,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1777990100472,"size":943775});
+
+define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
+const {collegeCard} = await import("./_import/components/collegeCard.c0477d60.js");
+
+return {collegeCard};
+}});
+
+define({id: "e846e93f", inputs: ["FileAttachment"], outputs: ["good_schools","programs_raw","programsByUnitid"], body: async (FileAttachment) => {
+const good_schools = await FileAttachment("./data/good_schools.csv").csv({typed: true});
+const programs_raw = await FileAttachment("./data/programs.csv").csv({typed: true});
+
+const programsByUnitid = new Map();
+for (const row of programs_raw) {
+  const key = String(row.UNITID);
+  if (!programsByUnitid.has(key)) programsByUnitid.set(key, []);
+  programsByUnitid.get(key).push(row);
+}
+for (const v of programsByUnitid.values()) v.sort((a, b) => b.total_awards - a.total_awards);
+return {good_schools,programs_raw,programsByUnitid};
+}});
+
+define({id: "92c51ee1", inputs: ["localStorage","good_schools"], outputs: ["getDeck","deckIds","schoolMap","deckSchools"], body: (localStorage,good_schools) => {
+function getDeck() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("college-deck") || "{}");
+    if (Array.isArray(raw)) return new Set(raw.map(String));
+    const all = new Set();
+    for (const tier of ["definitely", "probably", "maybe"]) {
+      for (const id of (raw[tier] || [])) all.add(String(id));
+    }
+    return all;
+  } catch { return new Set(); }
+}
+
+const deckIds = getDeck();
+const schoolMap = new Map(good_schools.map(s => [String(s.UNITID), s]));
+
+const deckSchools = [...deckIds]
+  .map(id => schoolMap.get(id))
+  .filter(Boolean)
+  .sort((a, b) => a.INSTNM.localeCompare(b.INSTNM));
+return {getDeck,deckIds,schoolMap,deckSchools};
+}});
+
+define({id: "5a548df8", inputs: ["deckSchools","programsByUnitid","collegeCard","display"], outputs: ["container"], body: (deckSchools,programsByUnitid,collegeCard,display) => {
+const container = document.createElement("div");
+
+if (deckSchools.length === 0) {
+  container.innerHTML = `<p style="color:#6b7280; font-size:0.95rem; margin-top:1rem;">
+    No schools saved yet. On the <a href="./" style="color:#2563eb;">Explorer</a> page, 
+    open any school card and click <strong>Definitely</strong>, <strong>Probably</strong>, 
+    or <strong>Maybe</strong> to add it here.
+  </p>`;
+} else {
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;";
+
+  for (const school of deckSchools) {
+    const topMajors = (programsByUnitid.get(String(school.UNITID)) || []).slice(0, 5);
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(collegeCard(school, topMajors));
+    grid.appendChild(wrapper);
+  }
+
+  container.appendChild(grid);
+}
+
+display(container);
+return {container};
+}});
+
+</script>
+</head>
+<body>
+<div id="observablehq-center">
+<main id="observablehq-main" class="observablehq">
+<h1 id="my-deck" tabindex="-1"><a class="observablehq-header-anchor" href="#my-deck">My Deck</a></h1>
+<div class="observablehq observablehq--block"><!--:01b94a85:--></div>
+<div class="observablehq observablehq--block"><!--:e846e93f:--></div>
+<div class="observablehq observablehq--block"><!--:92c51ee1:--></div>
+<div class="observablehq observablehq--block"><!--:5a548df8:--></div>
+</main>
+<footer id="observablehq-footer">
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-05-05T14:08:30">May 5, 2026</a>.</div>
+</footer>
+</div>
+</body>
+</html>

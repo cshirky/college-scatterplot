@@ -12,7 +12,7 @@
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.dcdbf18e.css">
 <link rel="stylesheet" type="text/css" href="./_observablehq/stdlib/inputs.ea9fd553.css">
-<link rel="modulepreload" href="./_observablehq/client.7778922b.js">
+<link rel="modulepreload" href="./_observablehq/client.18fd8a4c.js">
 <link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.73a8ec5a.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.c0477d60.js">
@@ -58,11 +58,11 @@
 <link rel="modulepreload" href="./_npm/robust-predicates@3.0.3/42820bfa.js">
 <script type="module">
 
-import {define} from "./_observablehq/client.7778922b.js";
+import {define} from "./_observablehq/client.18fd8a4c.js";
 import {registerFile} from "./_observablehq/stdlib.73a8ec5a.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1777248274000,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1777248274003,"size":943775});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1777990100469,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1777990100472,"size":943775});
 
 define({id: "01b94a85", outputs: ["collegeCard"], body: async () => {
 const {collegeCard} = await import("./_import/components/collegeCard.c0477d60.js");
@@ -153,7 +153,7 @@ const rowCounts = d3.range(yieldStart, Math.ceil(yieldMax / yieldStep) * yieldSt
 return {localeGroups,data,yieldMax,yieldStep,gradStep,yieldStart,yieldEnd,gradStart,gradEnd,grid,shadeColors,cellShade,colCounts,rowCounts};
 }});
 
-define({id: "2f8cee7d", inputs: ["html","display"], body: (html,display) => {
+define({id: "7010a83f", inputs: ["html","display"], body: (html,display) => {
 {
   const details = html`<details style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
   <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
@@ -177,26 +177,27 @@ define({id: "2f8cee7d", inputs: ["html","display"], body: (html,display) => {
       <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges became more selective on paper, even though there were <em>no new students and no reductions in incoming classes</em> -- the change in rate came solely from the same number of students each applying to more schools.</li>
     </ol>
     <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand but also easy to fake and relatively unimportant.</p>
-    <p>On the other hand, there are two important and hard to fake measurements: Yield, and 6 Year Graduation rate.</p>
+    <p>On the other hand, there are two important and hard to fake measurements: Yield, and graduation rate.</p>
     <ul>
-      <li><p><strong>Yield</strong> is an input, a measure of the percentage of students who were admitted and chose to go.</p> 
+      <li><p><strong>Yield</strong> is an input, a measure of the percentage of students who were admitted and chose to go there instead of to another school that accepted them.</p> 
       <p>Yield measures a <em>choice</em> -- if a student says Yes to one school, they are saying No to every other school they got into. Colleges obsess over yield internally, but don't mention it to applicants. If a school offers a spot to 100 students, and only 10 go, that tells you something very different than if 40 go, or 60: School A, at 10% yield, is a safety, School B, at 40%, has more people who want to be there in particular. Schoool C, at 60%, is beloved. So, higher Yield is a good proxy for an engaged and committed student body.</p></li>
       <li><p><strong>6 Year Graduation Rate</strong> is an output, and just what it sounds like: how many students have graduated 6 years after their arrival? (The Bachelor's is often called a 4 year degree, but many students take more time, hence the 6 year window.)</p> 
-        <p>Colleges don't like to talk about graduation rate either; out of thousands of colleges in the U.S. fewer than 100 graduate 9 out of 10 students, while thousands graduate less than half their incoming classes. Graduation rate is the single most important metric. It captures something about how prepared and serious the students there are, and something about how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
+        <p>Colleges don't like to talk about graduation rate either; out of thousands of colleges in the U.S. fewer than 100 graduate 9 out of 10 students, while thousands of colleges graduate less than half their incoming classes. Graduation rate is the single most important metric. It captures something about how prepared and serious the students there are, and something about how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
     </ul>
     <p>The chart below shows colleges that:</p>
     <ul>
-      <li>Have 10%+ Yield and 50%+ graduation rate. (You can adjust this to higher thresholds in the controls below the chart.)</li> 
+      <li>Have at least a 10%+ Yield and 50%+ graduation rate. (You can set higher thresholds in the controls below the chart.)</li> 
       <li>Offers more Bachelor's degrees than Associate's ("two year") degrees</li>
       <li>Has students studying full-time, in person, and living on or near campus</li>
       <li>Has a broad curriculum (a lot of potential majors)</li>
     </ul>
     <p>There are also some schools that are categorically excluded:</p>
-    <ul><li>For-profit schools, which typically have awful graduation rates, and are more reliable producers of debt than degrees. (Seriously, don't even <em>consider</em> attending a for-profit college.)</li>
+    <ul><li>For-profit schools, which typically have awful graduation rates, and are more reliable producers of debt than degrees. (Seriously, don't even <em>consider</em> for-profit colleges. Oh, and US News now camouflages for-profit schools as "proprietary" on its lists, so don't consider propiretary schools either.)</li>
       <li>Schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries.</li>
       <li>Schools designed for students of a specific gender, race, ethnicity, or religious affiliation.</li>
     </ul>
-    <p>Click any dot to see a school card at the bottom of the page, and any diamond to see the two or more schools at that location.</p>
+    <p>As you'll see, schools where at least 1 in 2 admits actually attend (>50% yield) and schools where at least 4 out of 5 graduate (>80% grad rate) are rare. This is one of the reasons colleges obsess about these figures internally, but don't like to talk about them in public.</p>
+    <p>Click any dot to see a school card in the tray at the bottom of the page, and any diamond to see the two or more schools at that location. </p>
   </div>
 </details>`;
   details.addEventListener("toggle", () => {
@@ -212,7 +213,7 @@ data.length
 ))
 }});
 
-define({id: "a1c9d556", inputs: ["localStorage","collegeCard"], outputs: ["modal","tray","trayEmpty","trayChips","activeChip","cardArea"], body: (localStorage,collegeCard) => {
+define({id: "045e58ce", inputs: ["localStorage","collegeCard"], outputs: ["modal","tray","trayEmpty","trayChips","deckLink","activeChip","cardArea"], body: (localStorage,collegeCard) => {
 document.getElementById("college-tray")?.remove();
 document.getElementById("college-modal")?.remove();
 
@@ -233,7 +234,12 @@ trayEmpty.style.cssText = "font-size:0.8rem; color:#aaa; font-style:italic;";
 const trayChips = document.createElement("div");
 trayChips.style.cssText = "display:flex; gap:0.5rem; flex-wrap:wrap; flex:1; align-items:center;";
 
-tray.append(trayEmpty, trayChips);
+const deckLink = document.createElement("a");
+deckLink.href = "/my-deck";
+deckLink.textContent = "My Deck";
+deckLink.style.cssText = "font-size:0.8rem; font-weight:600; color:#2563eb; text-decoration:none; white-space:nowrap; padding:0.2rem 0.5rem; border:1px solid #93c5fd; border-radius:4px; background:#dbeafe;";
+
+tray.append(trayEmpty, trayChips, deckLink);
 document.body.append(modal, tray);
 document.addEventListener("click", () => {
   modal.style.display = "none";
@@ -336,7 +342,7 @@ const cardArea = {
     chip.click();
   }
 };
-return {modal,tray,trayEmpty,trayChips,activeChip,cardArea};
+return {modal,tray,trayEmpty,trayChips,deckLink,activeChip,cardArea};
 }});
 
 define({id: "56c3ce3c", inputs: ["controls","data","Plot","gradFloor","d3","yieldFloor","grid","cellShade","colCounts","rowCounts","html","cardArea","programsByUnitid","display"], body: (controls,data,Plot,gradFloor,d3,yieldFloor,grid,cellShade,colCounts,rowCounts,html,cardArea,programsByUnitid,display) => {
@@ -672,9 +678,9 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:91520bb6:--></div>
 <div class="observablehq observablehq--block"><!--:a08eb915:--></div>
 <div class="observablehq observablehq--block"><!--:eac9a5bc:--></div>
-<div class="observablehq observablehq--block"><!--:2f8cee7d:--></div>
+<div class="observablehq observablehq--block"><!--:7010a83f:--></div>
 <h2 id="residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate</a></h2>
-<div class="observablehq observablehq--block"><!--:a1c9d556:--></div>
+<div class="observablehq observablehq--block"><!--:045e58ce:--></div>
 <div class="observablehq observablehq--block"><!--:56c3ce3c:--></div>
 <div class="observablehq observablehq--block"><!--:e8852c14:--></div>
 <div class="observablehq observablehq--block"><!--:b5e09a48:--></div>
@@ -682,7 +688,7 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:f5d59d16:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-27T00:04:39">Apr 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-05-05T14:08:30">May 5, 2026</a>.</div>
 </footer>
 </div>
 </body>
