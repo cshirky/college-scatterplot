@@ -1,4 +1,4 @@
-import { html } from "../../_npm/htl@0.3.1/72f4716c.js";
+import { html } from "../../_npm/htl@1.0.0/87d6f6ef.js";
 import * as topojson from "../../_npm/topojson-client@3.1.0/edd9ee95.js";
 import { geoAlbersUsa, geoPath } from "../../_npm/d3-geo@3.1.1/40599fb3.js";
 
