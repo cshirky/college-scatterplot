@@ -2,7 +2,7 @@ const VERSIONS = [
   {id: "scatterplot", href: "/scatterplot", label: "Original"},
   {id: "reverse",     href: "/reverse",     label: "A) Reverse"},
   {id: "joy",         href: "/joy",         label: "B) Joy"},
-  {id: "isometric",   href: "/isometric",   label: "C) Isometric"},
+  {id: "3d",          href: "/3d",          label: "C) 3D"},
 ];
 
 export function scatterNav(current) {
