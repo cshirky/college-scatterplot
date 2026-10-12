@@ -18,11 +18,13 @@
 <link rel="modulepreload" href="./_import/components/nav.6f27cafb.js">
 <link rel="modulepreload" href="./_import/components/tray.a532a0a6.js">
 <link rel="modulepreload" href="./_import/components/filters.3cc3d053.js">
-<link rel="modulepreload" href="./_import/components/isometric.7f1c36a2.js">
+<link rel="modulepreload" href="./_import/components/isometric.39e50c3d.js">
 <link rel="modulepreload" href="./_observablehq/stdlib/inputs.a78e04a0.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.48785337.js">
 <link rel="modulepreload" href="./_import/components/cells.55d7d74d.js">
 <link rel="modulepreload" href="./_npm/d3@7.9.0/080cf928.js">
+<link rel="modulepreload" href="./_npm/three@0.186.1/ba7446bd.js">
+<link rel="modulepreload" href="./_npm/three@0.186.1/examples/jsm/controls/OrbitControls.js.f8e609f2.js">
 <link rel="modulepreload" href="./_npm/htl@1.0.0/11521f02.js">
 <link rel="modulepreload" href="./_npm/topojson-client@3.1.0/7fb99109.js">
 <link rel="modulepreload" href="./_npm/d3-geo@3.1.1/8037bd0b.js">
@@ -64,12 +66,12 @@
 import {define} from "./_observablehq/client.8c722009.js";
 import {registerFile} from "./_observablehq/stdlib.300f231b.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1791843391407,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791843391410,"size":943775});
-registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791843391411,"size":114554});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1791845157451,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791845157454,"size":943775});
+registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791845157455,"size":114554});
 
 define({id: "647ef5d1", outputs: ["scatterNav","createCardArea","buildControls","filterData","isometricPlot"], body: async () => {
-const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {isometricPlot}] = await Promise.all([import("./_import/components/nav.6f27cafb.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.3cc3d053.js"), import("./_import/components/isometric.7f1c36a2.js")]);
+const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {isometricPlot}] = await Promise.all([import("./_import/components/nav.6f27cafb.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.3cc3d053.js"), import("./_import/components/isometric.39e50c3d.js")]);
 
 return {scatterNav,createCardArea,buildControls,filterData,isometricPlot};
 }});
@@ -112,9 +114,9 @@ const cardArea = createCardArea({usGeo, emptyText: "Click a prism to add its sch
 return {cardArea};
 }});
 
-define({id: "df7a607c", inputs: ["display","isometricPlot","data","controls","yieldFloor","gradFloor","cardArea","programsByUnitid"], body: (display,isometricPlot,data,controls,yieldFloor,gradFloor,cardArea,programsByUnitid) => {
+define({id: "a233f282", inputs: ["display","isometricPlot","data","controls","yieldFloor","gradFloor","cardArea","programsByUnitid","invalidation"], body: (display,isometricPlot,data,controls,yieldFloor,gradFloor,cardArea,programsByUnitid,invalidation) => {
 display(isometricPlot({
-  data, query: controls.searchQuery.trim().toLowerCase(), yieldFloor, gradFloor, cardArea, programsByUnitid,
+  data, query: controls.searchQuery.trim().toLowerCase(), yieldFloor, gradFloor, cardArea, programsByUnitid, invalidation,
 }));
 }});
 
@@ -137,18 +139,18 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:647ef5d1:--></div>
 <div class="observablehq observablehq--block"><!--:64cfffad:--></div>
 <h1 id="the-landscape-of-american-colleges-in-3-d" tabindex="-1"><a class="observablehq-header-anchor" href="#the-landscape-of-american-colleges-in-3-d">The Landscape of American Colleges in 3D</a></h1>
-<p>The same data as the <a href="./scatterplot">original</a>, with a prism rising from each 5×5-point square in proportion to the number of schools in it. Hover a prism for the schools; click to add them to the tray.</p>
+<p>The same data as the <a href="./scatterplot">original</a>, with a prism rising from each 5×5-point square in proportion to the number of schools in it. Drag the chart to see it from another angle. Hover a prism for the schools; click to add them to the tray.</p>
 <div class="observablehq observablehq--block"><!--:f0723dae:--></div>
 <div class="observablehq observablehq--block"><!--:a08eb915:--></div>
 <div class="observablehq observablehq--block"><!--:f395c979:--></div>
 <h2 id="residential-colleges-one-prism-per-square" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-one-prism-per-square"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges, one prism per square</a></h2>
 <div class="observablehq observablehq--block"><!--:b4668d10:--></div>
-<div class="observablehq observablehq--block"><!--:df7a607c:--></div>
+<div class="observablehq observablehq--block"><!--:a233f282:--></div>
 <div class="observablehq observablehq--block"><!--:a2f1c730:--></div>
 <div class="observablehq observablehq--block"><!--:f5d59d16:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-12T22:16:41">Oct 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-12T22:46:05">Oct 12, 2026</a>.</div>
 </footer>
 </div>
 </body>
