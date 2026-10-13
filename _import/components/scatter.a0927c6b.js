@@ -1,6 +1,6 @@
 import * as d3 from "../../_npm/d3@7.9.0/080cf928.js";
 import * as Plot from "../../_npm/@observablehq/plot@0.6.17/93ce672e.js";
-import {STEP, YIELD_END, GRAD_END, cellShade} from "./cells.55d7d74d.js";
+import {STEP, YIELD_END, GRAD_END, cellShade} from "./cells.dceb64b7.js";
 
 const ns = "http://www.w3.org/2000/svg";
 

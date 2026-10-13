@@ -40,8 +40,7 @@ export function buildCells(data, yieldFloor, gradFloor) {
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const TRAY_CAP = 10;
 
-export function cellHtml(schools, g1, y1) {
-  const range = `${y1}–${y1 + STEP}% yield · ${g1}–${g1 + STEP}% grad`;
+export function cellHtml(schools, g1, y1, range = `${y1}–${y1 + STEP}% yield · ${g1}–${g1 + STEP}% grad`) {
   if (!schools.length) return `<strong>No schools</strong><br><span style="color:#555">${range}</span>`;
   const shown = schools.slice(0, 12).map(s => esc(s.INSTNM)).join("<br>");
   const more = schools.length > 12 ? `<br>…and ${schools.length - 12} more` : "";

@@ -1,7 +1,7 @@
 import * as d3 from "../../_npm/d3@7.9.0/080cf928.js";
 import * as THREE from "../../_npm/three@0.186.1/ba7446bd.js";
 import {OrbitControls} from "../../_npm/three@0.186.1/examples/jsm/controls/OrbitControls.js.f8e609f2.js";
-import {STEP, cellShade, buildCells, cellHtml, addCellToTray, makeTip} from "./cells.55d7d74d.js";
+import {STEP, cellShade, buildCells, cellHtml, addCellToTray, makeTip} from "./cells.dceb64b7.js";
 
 const PUBLIC = "#d50000", PRIVATE = "#1d4ed8";
 const W = 860, H = 640;
