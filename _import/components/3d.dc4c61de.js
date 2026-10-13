@@ -95,7 +95,7 @@ function floorTexture(gradBins, yieldBins) {
 // 3D version: each 5x5 grid square gets a prism whose height is the number of schools.
 // World axes: x = grad column, z = yield row, y = height. Drag to orbit; ctrl/cmd + wheel to zoom.
 // Pass the cell's `invalidation` promise so the WebGL context is released on re-render.
-export function isometricPlot({data, query, yieldFloor, gradFloor, cardArea, programsByUnitid, invalidation}) {
+export function plot3d({data, query, yieldFloor, gradFloor, cardArea, programsByUnitid, invalidation}) {
   const {gradBins, yieldBins, grid, cellOf, maxCount} = buildCells(data, yieldFloor, gradFloor);
   const nG = gradBins.length, nY = yieldBins.length;
   const maxH = 0.45 * (nG + nY);
