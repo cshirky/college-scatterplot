@@ -5,7 +5,13 @@ const stateOptions = [
   "WI","WV","WY"
 ];
 
-export function buildControls(Inputs, good_schools) {
+// `yieldFloors` / `gradFloors` are the choices in the two dropdowns; the first is the default and
+// 0 means no minimum. `regional: false` drops the state dropdown, for data with no instate_only flag.
+export function buildControls(Inputs, good_schools, {
+  yieldFloors = [10, 15, 20, 25],
+  gradFloors = [50, 55, 60, 65],
+  regional = true,
+} = {}) {
   const localeCounts = {
     "Cities":           good_schools.filter(d => d.locale_group === "City").length,
     "Towns or Suburbs": good_schools.filter(d => d.locale_group === "Town" || d.locale_group === "Suburb").length,
@@ -21,16 +27,16 @@ export function buildControls(Inputs, good_schools) {
   return Inputs.form(
     {
       searchQuery: Inputs.text({placeholder: "Search for a school…", width: 300, label: "Search:"}),
-      yieldFloor: Inputs.select([10, 15, 20, 25], {
+      yieldFloor: Inputs.select(yieldFloors, {
         label: null,
-        format: d => `Exclude schools with < ${d}% yield`,
-        value: 10,
+        format: d => d ? `Exclude schools with < ${d}% yield` : "No minimum yield",
+        value: yieldFloors[0],
         width: 170,
       }),
-      gradFloor: Inputs.select([50, 55, 60, 65], {
+      gradFloor: Inputs.select(gradFloors, {
         label: null,
-        format: d => `Exclude schools with < ${d}% grad rate`,
-        value: 50,
+        format: d => d ? `Exclude schools with < ${d}% grad rate` : "No minimum grad rate",
+        value: gradFloors[0],
         width: 185,
       }),
       selectedState: Inputs.select([null, ...stateOptions], {
@@ -62,7 +68,7 @@ export function buildControls(Inputs, good_schools) {
         const row1 = document.createElement("div");
         row1.style.cssText = "display:flex; gap:1rem;";
         row1.append(inputs.yieldFloor, inputs.gradFloor);
-        wrap.append(inputs.searchQuery, row1, inputs.selectedState, inputs.localeFilter, inputs.sizeFilter);
+        wrap.append(inputs.searchQuery, row1, ...(regional ? [inputs.selectedState] : []), inputs.localeFilter, inputs.sizeFilter);
         return wrap;
       }
     }

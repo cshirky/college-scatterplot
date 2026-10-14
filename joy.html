@@ -15,9 +15,9 @@
 <link rel="modulepreload" href="./_observablehq/client.a99b9229.js">
 <link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.300f231b.js">
-<link rel="modulepreload" href="./_import/components/nav.2b4e1446.js">
+<link rel="modulepreload" href="./_import/components/nav.45a4eff7.js">
 <link rel="modulepreload" href="./_import/components/tray.a532a0a6.js">
-<link rel="modulepreload" href="./_import/components/filters.3cc3d053.js">
+<link rel="modulepreload" href="./_import/components/filters.65c3252d.js">
 <link rel="modulepreload" href="./_import/components/joy.d1b1f065.js">
 <link rel="modulepreload" href="./_observablehq/stdlib/inputs.a78e04a0.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.48785337.js">
@@ -64,12 +64,12 @@
 import {define} from "./_observablehq/client.a99b9229.js";
 import {registerFile} from "./_observablehq/stdlib.300f231b.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1791928218687,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791928218690,"size":943775});
-registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791928218690,"size":114554});
+registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1791987655403,"size":565993});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791987655406,"size":943775});
+registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791987655407,"size":114554});
 
 define({id: "5cf9153b", outputs: ["scatterNav","createCardArea","buildControls","filterData","joyPlot"], body: async () => {
-const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {joyPlot}] = await Promise.all([import("./_import/components/nav.2b4e1446.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.3cc3d053.js"), import("./_import/components/joy.d1b1f065.js")]);
+const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {joyPlot}] = await Promise.all([import("./_import/components/nav.45a4eff7.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.65c3252d.js"), import("./_import/components/joy.d1b1f065.js")]);
 
 return {scatterNav,createCardArea,buildControls,filterData,joyPlot};
 }});
@@ -137,7 +137,7 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:5cf9153b:--></div>
 <div class="observablehq observablehq--block"><!--:9ad1ef62:--></div>
 <h1 id="the-landscape-of-american-colleges-as-a-joy-plot" tabindex="-1"><a class="observablehq-header-anchor" href="#the-landscape-of-american-colleges-as-a-joy-plot">The Landscape of American Colleges as a Joy Plot</a></h1>
-<p>The same data as the <a href="./scatterplot">original</a>, drawn as a ridgeline plot. Each horizontal line is a 5-point band of <strong>graduation rate</strong>; along the <strong>yield</strong> axis each school covers its own yield ±1 point, and the line's height is the number of schools covering that yield. Hover a ridge for the schools; click to add them to the tray.</p>
+<p>The same data as the <a href="./scatterplot">scatterplot</a>, drawn as a ridgeline plot. Each horizontal line is a 5-point band of <strong>graduation rate</strong>; along the <strong>yield</strong> axis each school covers its own yield ±1 point, and the line's height is the number of schools covering that yield. Hover a ridge for the schools; click to add them to the tray.</p>
 <div class="observablehq observablehq--block"><!--:f0723dae:--></div>
 <div class="observablehq observablehq--block"><!--:a08eb915:--></div>
 <div class="observablehq observablehq--block"><!--:f395c979:--></div>
@@ -148,7 +148,7 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:f5d59d16:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-13T21:50:26">Oct 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-14T14:21:05">Oct 14, 2026</a>.</div>
 </footer>
 </div>
 </body>

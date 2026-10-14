@@ -15,16 +15,16 @@
 <link rel="modulepreload" href="./_observablehq/client.a99b9229.js">
 <link rel="modulepreload" href="./_observablehq/runtime.e080113b.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.300f231b.js">
-<link rel="modulepreload" href="./_import/components/nav.2b4e1446.js">
+<link rel="modulepreload" href="./_import/components/nav.45a4eff7.js">
 <link rel="modulepreload" href="./_import/components/tray.a532a0a6.js">
-<link rel="modulepreload" href="./_import/components/filters.3cc3d053.js">
-<link rel="modulepreload" href="./_import/components/scatter.a0927c6b.js">
-<link rel="modulepreload" href="./_npm/htl@1.0.0/11521f02.js">
+<link rel="modulepreload" href="./_import/components/filters.65c3252d.js">
+<link rel="modulepreload" href="./_import/components/scatter.4b36e8a2.js">
 <link rel="modulepreload" href="./_observablehq/stdlib/inputs.a78e04a0.js">
 <link rel="modulepreload" href="./_import/components/collegeCard.48785337.js">
 <link rel="modulepreload" href="./_import/components/cells.dceb64b7.js">
 <link rel="modulepreload" href="./_npm/d3@7.9.0/080cf928.js">
 <link rel="modulepreload" href="./_npm/@observablehq/plot@0.6.17/93ce672e.js">
+<link rel="modulepreload" href="./_npm/htl@1.0.0/11521f02.js">
 <link rel="modulepreload" href="./_npm/topojson-client@3.1.0/7fb99109.js">
 <link rel="modulepreload" href="./_npm/d3-geo@3.1.1/8037bd0b.js">
 <link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/097745a2.js">
@@ -67,12 +67,12 @@
 import {define} from "./_observablehq/client.a99b9229.js";
 import {registerFile} from "./_observablehq/stdlib.300f231b.js";
 
-registerFile("./data/good_schools.csv", {"name":"./data/good_schools.csv","mimeType":"text/csv","path":"./_file/data/good_schools.01e81b15.csv","lastModified":1791928218687,"size":565993});
-registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791928218690,"size":943775});
-registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791928218690,"size":114554});
+registerFile("./data/all_schools.csv", {"name":"./data/all_schools.csv","mimeType":"text/csv","path":"./_file/data/all_schools.48c011d9.csv","lastModified":1791987655401,"size":1180174});
+registerFile("./data/programs.csv", {"name":"./data/programs.csv","mimeType":"text/csv","path":"./_file/data/programs.edf93b7c.csv","lastModified":1791987655406,"size":943775});
+registerFile("./data/us-states.json", {"name":"./data/us-states.json","mimeType":"application/json","path":"./_file/data/us-states.d76b391c.json","lastModified":1791987655407,"size":114554});
 
 define({id: "8e92b823", outputs: ["scatterNav","createCardArea","buildControls","filterData","scatterPlot"], body: async () => {
-const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {scatterPlot}] = await Promise.all([import("./_import/components/nav.2b4e1446.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.3cc3d053.js"), import("./_import/components/scatter.a0927c6b.js")]);
+const [{scatterNav}, {createCardArea}, {buildControls, filterData}, {scatterPlot}] = await Promise.all([import("./_import/components/nav.45a4eff7.js"), import("./_import/components/tray.a532a0a6.js"), import("./_import/components/filters.65c3252d.js"), import("./_import/components/scatter.4b36e8a2.js")]);
 
 return {scatterNav,createCardArea,buildControls,filterData,scatterPlot};
 }});
@@ -81,10 +81,10 @@ define({id: "18696b32", inputs: ["display","scatterNav"], body: (display,scatter
 display(scatterNav("scatterplot"));
 }});
 
-define({id: "f0723dae", inputs: ["FileAttachment"], outputs: ["good_schools","usGeo"], body: async (FileAttachment) => {
-const good_schools = FileAttachment("./data/good_schools.csv").csv({typed: true});
+define({id: "7c9bec80", inputs: ["FileAttachment"], outputs: ["all_schools","usGeo"], body: async (FileAttachment) => {
+const all_schools = FileAttachment("./data/all_schools.csv").csv({typed: true});
 const usGeo = await FileAttachment("./data/us-states.json").json();
-return {good_schools,usGeo};
+return {all_schools,usGeo};
 }});
 
 define({id: "a08eb915", inputs: ["FileAttachment"], outputs: ["programs_raw","programsByUnitid"], body: async (FileAttachment) => {
@@ -99,84 +99,35 @@ for (const v of programsByUnitid.values()) v.sort((a, b) => b.total_awards - a.t
 return {programs_raw,programsByUnitid};
 }});
 
-define({id: "f395c979", inputs: ["filterData","good_schools","controls"], outputs: ["data"], body: (filterData,good_schools,controls) => {
-const data = filterData(good_schools, controls);
+define({id: "8fe72060", inputs: ["filterData","all_schools","controls"], outputs: ["data"], body: (filterData,all_schools,controls) => {
+const data = filterData(all_schools, controls);
 return {data};
 }});
 
-define({id: "08d0259f", inputs: ["html","display"], body: (html,display) => {
-{
-  const details = html`<details style="border:1px solid #ddd; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1.5rem; background:#f9fafb;">
-  <summary style="font-weight:600; font-size:1rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;">
-    What (and who) this is for
-    <span class="toggle-hint" style="font-size:0.8rem; font-weight:400; color:#888;">click to expand</span>
-  </summary>
-  <div style="margin-top:0.75rem; font-size:0.9rem; line-height:1.7; color:#333; max-width:720px;">
-    <p>This is an opinionated guide to understanding the landscape of U.S. colleges you might be interested in attending. It assumes you are:</p>
-    <ul>
-      <li>An American high school student…</li>
-      <li>…with a B- grade average or better</li>
-      <li>…who wants a Bachelor's degree</li>
-      <li>…at a college that has lots of options for majors</li>
-      <li>…where you study full-time and live on campus.</li>
-    </ul>
-    <p>If that describes you, the chart below, drawn from data collected in the <a href="https://nces.ed.gov/ipeds">Integrated Postsecondary Education Data System</a>, is designed to help you explore your options. (And maybe that doesn't describe you, because you want to go to community college, or art school, or study online. Maybe you want to live at home, or go to a women's college, or a school for people of your religion. Those are fine choices, but present a much narrower set of options.)</p>
-    <p>I'll start with three assertions:</p>
-    <ol>
-      <li><strong>High school students worry too much</strong> about whether they will be accepted to any particular college, while spending too little time trying to get a sense of the places they might like to go. This page is for you to get a sense of the overall landscape.</li>
-      <li><strong>If you have a dream school</strong>, knock it off. Seriously, tf are you thinking? It's good to have a sense of what colleges you might like to attend, but no institution should have that much effect on your hopes for yourself. Make a list and don't fixate on just one school.</li>
-      <li><strong>A college's acceptance rate</strong> is a fairly bullshit number. When the Common App went online in the late '90s, most of the selective colleges became more selective on paper, even though there were <em>no new students and no reductions in incoming classes</em> -- the change in rate came solely from the same number of students each applying to more schools.</li>
-    </ol>
-    <p>Colleges have every incentive to get you to focus on things like their mission statement (some version of "Knowledge is good", but in Latin), or how selective they are, or how nice the campus looks in the fall. These signals of quality are easy to understand, but they are also easy to fake and relatively unimportant.</p>
-    <p>On the other hand, there are two important and hard to fake measurements: Yield, and graduation rate.</p>
-    <ul>
-      <li><p><strong>Yield</strong> is an input, a measure of the percentage of students who were admitted and chose to go there instead of to another school that accepted them.</p> 
-      <p>Yield measures a <em>choice</em> -- if a student says Yes to one school, they are saying No to every other school they got into. Colleges obsess over yield internally, but don't mention it to applicants. If a school offers a spot to 100 students, and only 10 go, that tells you something very different than if 40 go, or 60: School A, at 10% yield, is a safety, School B, at 40%, has many more people who want to be there in particular. Schoool C, at 60%, is beloved. So, higher Yield is a good proxy for an engaged and committed student body.</p></li>
-      <li><p><strong>6 Year Graduation Rate</strong> is an output, and just what it sounds like: how many students have graduated 6 years after their arrival? (The Bachelor's is often called a 4 year degree, but many students take more time, hence the 6 year window.)</p> 
-        <p>Graduation rate is the single most important metric. Colleges don't like to talk about graduation rate either; out of thousands of colleges in the U.S. fewer than a hundred graduate 9 out of 10 students, while thousands of colleges graduate less than half.  Grad rate captures something about how prepared and serious the students there are, and something about how well the college supports them. If many students drop out or transfer out before graduating, it does not matter how nice the campus looks in fall -- just don't apply.</p></li>
-    </ul>
-    <p>The chart below shows colleges that:</p>
-    <ul>
-      <li>Have at least a 10%+ Yield and 50%+ graduation rate, pretty much <a href="https://en.wikipedia.org/wiki/Mendoza_Line">the Mendoza Line</a> for being a selective college. (You can set higher thresholds in the controls below the chart.)</li> 
-      <li>Offers more Bachelor's degrees than Associate's ("two year") degrees</li>
-      <li>Has students studying full-time, in person, and living on or near campus</li>
-      <li>Has a broad curriculum (a lot of potential majors)</li>
-    </ul>
-    <p>There are also some schools that are categorically excluded:</p>
-    <ul><li>For-profit schools, which typically have awful graduation rates, and are more reliable producers of debt than degrees. (Seriously, don't even <em>consider</em> for-profit colleges. Oh, and US News now camouflages for-profit schools as Proprietary on its lists, so don't consider proprietary schools either.)</li>
-      <li>Schools with highly specialized curricula -- art schools, engineering schools, health professions schools, seminaries.</li>
-      <li>Schools designed for students of a specific gender, race, ethnicity, or religious affiliation.</li>
-    </ul>
-    <p>As you'll see, schools where at least one in two admits actually attend (>50% yield) and schools where at least four out of five graduate (>80% grad rate) are rare. (They are also correlated at the upper end of both ranges) This is one of the reasons colleges obsess about these figures internally, but don't like to talk about them in public.</p>
-    <p>Click any dot to see a school card in the tray at the bottom of the page, and any diamond to see the two or more schools at that location. </p>
-  </div>
-</details>`;
-  details.addEventListener("toggle", () => {
-    details.querySelector(".toggle-hint").textContent = details.open ? "click to close" : "click to expand";
-  });
-  display(details);
-}
-}});
-
-define({id: "5112417b", mode: "inline", inputs: ["data","display"], body: async (data,display) => {
+define({id: "c8467a0e", mode: "inline", inputs: ["data","display"], body: async (data,display) => {
 display(await(
-data.length
+data.length.toLocaleString()
 ))
 }});
 
-define({id: "84cc8197", inputs: ["createCardArea","usGeo"], outputs: ["cardArea"], body: (createCardArea,usGeo) => {
-const cardArea = createCardArea({usGeo});
+define({id: "11981887", inputs: ["createCardArea","usGeo"], outputs: ["cardArea"], body: (createCardArea,usGeo) => {
+const cardArea = createCardArea({usGeo, emptyText: "Click any dot to see a school"});
 return {cardArea};
 }});
 
-define({id: "d3064b74", inputs: ["display","scatterPlot","data","controls","yieldFloor","gradFloor","cardArea","programsByUnitid"], body: (display,scatterPlot,data,controls,yieldFloor,gradFloor,cardArea,programsByUnitid) => {
+define({id: "6e38574d", inputs: ["display","scatterPlot","data","controls","yieldFloor","gradFloor","cardArea","programsByUnitid"], body: (display,scatterPlot,data,controls,yieldFloor,gradFloor,cardArea,programsByUnitid) => {
 display(scatterPlot({
   data, query: controls.searchQuery.trim().toLowerCase(), yieldFloor, gradFloor, cardArea, programsByUnitid,
+  reversed: true,
 }));
 }});
 
-define({id: "a2f1c730", inputs: ["view","buildControls","Inputs","good_schools"], outputs: ["controls"], body: (view,buildControls,Inputs,good_schools) => {
-const controls = view(buildControls(Inputs, good_schools));
+define({id: "3234d2a5", inputs: ["view","buildControls","Inputs","all_schools"], outputs: ["controls"], body: (view,buildControls,Inputs,all_schools) => {
+const controls = view(buildControls(Inputs, all_schools, {
+  yieldFloors: [0, 5, 10, 15, 20, 25],
+  gradFloors: [0, 10, 20, 30, 40, 50, 55, 60, 65],
+  regional: false,
+}));
 return {controls};
 }});
 
@@ -194,18 +145,18 @@ return {yieldFloor,gradFloor};
 <div class="observablehq observablehq--block"><!--:8e92b823:--></div>
 <div class="observablehq observablehq--block"><!--:18696b32:--></div>
 <h1 id="the-landscape-of-american-colleges" tabindex="-1"><a class="observablehq-header-anchor" href="#the-landscape-of-american-colleges">The Landscape of American Colleges</a></h1>
-<div class="observablehq observablehq--block"><!--:f0723dae:--></div>
+<p>Every U.S. institution that awards Bachelor's degrees and reports both measures. <strong>Yield</strong> runs left to right and <strong>6-year graduation rate</strong> runs bottom to top. Click any dot to see a school card in the tray.</p>
+<div class="observablehq observablehq--block"><!--:7c9bec80:--></div>
 <div class="observablehq observablehq--block"><!--:a08eb915:--></div>
-<div class="observablehq observablehq--block"><!--:f395c979:--></div>
-<div class="observablehq observablehq--block"><!--:08d0259f:--></div>
-<h2 id="residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate" tabindex="-1"><a class="observablehq-header-anchor" href="#residential-colleges-with-a-broad-student-body-and-curriculum-arranged-by-yield-x-graduation-rate"><observablehq-loading></observablehq-loading><!--:5112417b:--> Residential Colleges with a Broad Student Body and Curriculum, arranged by Yield x Graduation Rate</a></h2>
-<div class="observablehq observablehq--block"><!--:84cc8197:--></div>
-<div class="observablehq observablehq--block"><!--:d3064b74:--></div>
-<div class="observablehq observablehq--block"><!--:a2f1c730:--></div>
+<div class="observablehq observablehq--block"><!--:8fe72060:--></div>
+<h2 id="bachelor-s-granting-colleges-arranged-by-graduation-rate-x-yield" tabindex="-1"><a class="observablehq-header-anchor" href="#bachelor-s-granting-colleges-arranged-by-graduation-rate-x-yield"><observablehq-loading></observablehq-loading><!--:c8467a0e:--> Bachelor's-granting Colleges, arranged by Graduation Rate x Yield</a></h2>
+<div class="observablehq observablehq--block"><!--:11981887:--></div>
+<div class="observablehq observablehq--block"><!--:6e38574d:--></div>
+<div class="observablehq observablehq--block"><!--:3234d2a5:--></div>
 <div class="observablehq observablehq--block"><!--:f5d59d16:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-13T21:50:26">Oct 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-10-14T14:21:05">Oct 14, 2026</a>.</div>
 </footer>
 </div>
 </body>

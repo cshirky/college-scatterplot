@@ -11,27 +11,30 @@ export function scatterPlot({data, query, yieldFloor, gradFloor, cardArea, progr
   const baseColor = d => d.sector_label === "Public" ? "#d50000" : "#1d4ed8";
   const hiColor   = d => d.sector_label === "Public" ? "#7f0000" : "#1e3a8a";
 
-  const gradAxis  = {key: "grad_rate_6yr", floor: gradFloor,  end: GRAD_END,  label: "6-year graduation rate", name: "grad-rate"};
-  const yieldAxis = {key: "yield_rate",    floor: yieldFloor, end: YIELD_END, label: "Yield (admitted students who chose to attend)", name: "yield"};
+  // The yield axis normally stops at YIELD_END, but stretches to fit any school above it.
+  const yieldMax = d3.max(data, d => d.yield_rate) ?? 0;
+  const yieldEnd = Math.max(YIELD_END, Math.min(100, Math.ceil(yieldMax / STEP) * STEP));
+
+  const gradAxis  = {key: "grad_rate_6yr", floor: gradFloor,  end: GRAD_END, label: "6-year graduation rate", name: "grad-rate"};
+  const yieldAxis = {key: "yield_rate",    floor: yieldFloor, end: yieldEnd, label: "Yield (admitted students who chose to attend)", name: "yield"};
   const xAx = reversed ? yieldAxis : gradAxis;
   const yAx = reversed ? gradAxis : yieldAxis;
-
-  const yieldMax = d3.max(data, d => d.yield_rate);
 
   // Grid of 5x5 cells, in grad/yield terms regardless of orientation.
   const grid = [];
   for (let g1 = gradFloor; g1 < GRAD_END; g1 += STEP) {
-    for (let y1 = yieldFloor; y1 < YIELD_END; y1 += STEP) {
+    for (let y1 = yieldFloor; y1 < yieldEnd; y1 += STEP) {
       grid.push({g1, g2: g1 + STEP, y1, y2: y1 + STEP});
     }
   }
 
   // Counts per bin along one axis. Yield bins stop at yieldMax so we don't label empty bins at the edge.
+  // The last bin also takes schools sitting exactly on the end of the axis (e.g. 100%).
   function binCounts(ax) {
-    const stop = ax === yieldAxis ? Math.ceil(yieldMax / STEP) * STEP : ax.end;
+    const stop = ax === yieldAxis ? Math.min(ax.end, Math.ceil((yieldMax + 1) / STEP) * STEP) : ax.end;
     return d3.range(ax.floor, stop, STEP).map(b1 => ({
       pos: b1 + STEP / 2,
-      count: data.filter(d => d[ax.key] >= b1 && d[ax.key] < b1 + STEP).length,
+      count: data.filter(d => d[ax.key] >= b1 && (d[ax.key] < b1 + STEP || (b1 + STEP === ax.end && d[ax.key] === ax.end))).length,
     }));
   }
   const xCounts = binCounts(xAx);  // labelled across the top
@@ -133,14 +136,14 @@ export function scatterPlot({data, query, yieldFloor, gradFloor, cardArea, progr
   // Row counts to the right of the plot
   for (const row of yCounts) {
     svgText(String(row.count), {
-      x: xRange[1] + 8, y: ys.apply(row.pos), "text-anchor": "start", "dominant-baseline": "middle",
+      x: xRange[1] + 12, y: ys.apply(row.pos), "text-anchor": "start", "dominant-baseline": "middle",
       "font-size": 9, "font-family": "sans-serif", fill: "#888",
     });
   }
 
   // "Number of schools in each row" label down the right side
   svgText(`Number of schools in each ${yAx.name} row`, {
-    transform: `translate(${xRange[1] + 36}, ${plotCenterY}) rotate(90)`, "text-anchor": "middle",
+    transform: `translate(${xRange[1] + 38}, ${plotCenterY}) rotate(90)`, "text-anchor": "middle",
     "font-size": 9, "font-family": "sans-serif", fill: "#888",
   });
 
@@ -169,7 +172,7 @@ export function scatterPlot({data, query, yieldFloor, gradFloor, cardArea, progr
     const {nearest, minDist, mx, my} = nearestTo(evt);
     if (nearest && minDist < 100) {
       const stack = stackAt(nearest);
-      const sector = nearest.sector_label === "Public" ? "Public" : "Private";
+      const sector = nearest.sector_label === "Private nonprofit" ? "Private" : nearest.sector_label;
       if (stack.length === 1) {
         tipEl.innerHTML = `<strong>${nearest.INSTNM}</strong><br>${sector} · ${nearest.CITY}, ${nearest.STABBR}<br><span style="color:#555">Grad: ${nearest.grad_rate_6yr}% &nbsp;·&nbsp; Yield: ${nearest.yield_rate}%</span>`;
       } else {
@@ -194,42 +197,27 @@ export function scatterPlot({data, query, yieldFloor, gradFloor, cardArea, progr
     }
   });
 
-  // Legend: upper-left corner of plot area (lower-right when reversed, where the dots are sparse)
+  // Legend: one line under the plot, either side of the x-axis label, so it never covers a dot.
   // d3 diamond for r=5: M0,-8.25 L4.76,0 L0,8.25 L-4.76,0 — height/width ratio = sqrt(3)
-  const legW = 185, legPad = 7, legShapeR = 4;
-  const legDiamondHH = legShapeR * (8.25 / 4.76); // half-height matching d3 ratio ≈ 6.93
-  const legRow1Y = 13;   // relative to legRectY
-  const legRow2Y = 33;   // enough clearance for diamond half-height above
-  const legH = legRow2Y + Math.ceil(legDiamondHH) + legPad;
-  const legRectX = reversed ? plotWidth - marginRight - legW - 8 : marginLeft + 8;
-  const legRectY = reversed ? plotHeight - marginBottom - legH - 8 : marginTop + 8;
-  const legShapeX = legRectX + legPad + legShapeR;
-  const legTextX  = legRectX + legPad + legShapeR * 2 + 6;
-
-  const r1Y = legRectY + legRow1Y, r2Y = legRectY + legRow2Y;
-
-  const legBg = document.createElementNS(ns, "rect");
-  legBg.setAttribute("x", legRectX); legBg.setAttribute("y", legRectY);
-  legBg.setAttribute("width", legW); legBg.setAttribute("height", legH);
-  legBg.setAttribute("fill", "white"); legBg.setAttribute("stroke", "#ccc");
-  legBg.setAttribute("stroke-width", "1"); legBg.setAttribute("rx", "3");
-  svgEl.appendChild(legBg);
+  const legShapeR = 4;
+  const legDiamondHH = legShapeR * (8.25 / 4.76); // half-width of the (rotated) diamond ≈ 6.93
+  const legY = plotHeight - 11;
+  const legLabelAttrs = {"font-size": 9, "font-family": "sans-serif", fill: "#555", "dominant-baseline": "middle"};
 
   const legCircle = document.createElementNS(ns, "circle");
-  legCircle.setAttribute("cx", legShapeX); legCircle.setAttribute("cy", r1Y);
+  legCircle.setAttribute("cx", marginLeft + legShapeR); legCircle.setAttribute("cy", legY);
   legCircle.setAttribute("r", legShapeR); legCircle.setAttribute("fill", "#888");
   legCircle.setAttribute("fill-opacity", "0.6");
   svgEl.appendChild(legCircle);
+  svgText("One school at this position", {x: marginLeft + legShapeR * 2 + 6, y: legY, "text-anchor": "start", ...legLabelAttrs});
 
-  const legLabelAttrs = {"font-size": 9, "font-family": "sans-serif", fill: "#555", "dominant-baseline": "middle", "text-anchor": "start"};
-  svgText("One school at this position", {x: legTextX, y: r1Y, ...legLabelAttrs});
-
+  const legRight = plotWidth - marginRight;
+  const legDiamondText = svgText("Two+ schools at this position", {x: legRight, y: legY, "text-anchor": "end", ...legLabelAttrs});
+  const legDiamondX = legRight - 122 - legDiamondHH;  // just left of the label, which is about 115px wide
   const legDiamond = document.createElementNS(ns, "path");
-  legDiamond.setAttribute("d", `M${legShapeX - legDiamondHH},${r2Y} L${legShapeX},${r2Y - legShapeR} L${legShapeX + legDiamondHH},${r2Y} L${legShapeX},${r2Y + legShapeR} Z`);
+  legDiamond.setAttribute("d", `M${legDiamondX - legDiamondHH},${legY} L${legDiamondX},${legY - legShapeR} L${legDiamondX + legDiamondHH},${legY} L${legDiamondX},${legY + legShapeR} Z`);
   legDiamond.setAttribute("fill", "#888"); legDiamond.setAttribute("fill-opacity", "0.6");
-  svgEl.appendChild(legDiamond);
-
-  svgText("Two+ schools at this position", {x: legTextX, y: r2Y, ...legLabelAttrs});
+  svgEl.insertBefore(legDiamond, legDiamondText);
 
   return wrapper;
 }
